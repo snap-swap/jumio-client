@@ -26,6 +26,20 @@ object EnumJumioSources extends Enumeration {
 
   //Netverify Mobile
   val sdk = Value("SDK")
+
+  val unknown = Value("UNKNOWN")
+}
+
+object EnumJumioVerificationStatuses extends Enumeration {
+  type JumioVerificationStatus = Value
+
+  val approved_verified = Value("APPROVED_VERIFIED")
+  val denied_fraud = Value("DENIED_FRAUD")
+  val denied_unsupported_id_type = Value("DENIED_UNSUPPORTED_ID_TYPE")
+  val denied_unsupported_id_country = Value("DENIED_UNSUPPORTED_ID_COUNTRY")
+  val error_not_readable_id = Value("ERROR_NOT_READABLE_ID")
+  val no_id_uploaded = Value("NO_ID_UPLOADED")
+  val unknown = Value("UNKNOWN")
 }
 
 object EnumJumioMRZCheck extends Enumeration {
@@ -58,8 +72,19 @@ case class JumioTx(status: EnumJumioTxStatuses.JumioTxStatus, source: EnumJumioS
       additionalInformation.map(v => s", '$v'") :: Nil).flatten.mkString
 }
 
-case class JumioRejectReason(code: String, description: String) {
+case class JumioRejection(code: String, description: String) {
   override def toString = s"[$code] $description"
+}
+
+case class JumioRejectReason(code: String, description: String, details: Seq[JumioRejection]) {
+  override def toString: String = {
+    s"[$code] $description" + (
+      if (details.isEmpty)
+        ""
+      else
+        " " + details.map(s => s"[${s.code}] ${s.description}").mkString("(", ", ", ")")
+    )
+  }
 }
 
 case class JumioVerification(mrzCheck: Option[EnumJumioMRZCheck.JumioMRZCheck],

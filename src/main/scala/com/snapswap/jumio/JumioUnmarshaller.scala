@@ -43,19 +43,20 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
 
   implicit val jumioTxFormat = jsonFormat8(JumioTx)
 
-  implicit val jumioRejectReasonFormat = jsonFormat(JumioRejectReason, "rejectReasonCode", "rejectReasonDescription")
+  implicit val jumioRejectionFormat = jsonFormat(JumioRejection, "detailsCode", "detailsDescription")
+  implicit val jumioRejectReasonFormat = jsonFormat(JumioRejectReason, "rejectReasonCode", "rejectReasonDescription", "rejectReasonDetails")
   implicit val jumioVerificationFormat = jsonFormat(JumioVerification, "mrzCheck", "faceMatch", "rejectReason")
 
   protected trait Address {
     def toAddress: JumioAddress
   }
 
-  protected case class USAddress(city: String, stateCode: String,
+  protected case class USAddress(city: String, stateCode: Option[String],
                                     streetName: String, streetSuffix: Option[String], streetDirection: Option[String],
                                     streetNumber: Option[String], unitDesignator: Option[String], unitNumber: Option[String],
                                     zip: String, zipExtension: Option[String], country: String
                                    ) extends Address {
-    def toAddress = JumioAddress(country = country, region = Some(stateCode), city = city,
+    def toAddress = JumioAddress(country = country, region = stateCode, city = city,
       postalCode = zip + zipExtension.map(v => s"-$v").getOrElse(""),
       streetAddress = (Some(streetName) ::
         streetSuffix.map(v => s" $v") ::
@@ -95,8 +96,8 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
     override def read(json: JsValue): JumioAddress = json match {
       case obj: JsObject =>
         (obj.fields.get("stateCode"), obj.fields.get("line1")) match {
-          case (Some(usState), None) => usAddressFormat.read(json).toAddress
-          case (None, Some(rawAddressField)) => rawAddressFormat.read(json).toAddress
+          case (Some(_), None) => usAddressFormat.read(json).toAddress
+          case (None, Some(_)) => rawAddressFormat.read(json).toAddress
           case _ => euAddressFormat.read(json).toAddress
         }
       case x => deserializationError("Expected address as object, but got " + x)
@@ -105,7 +106,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
     override def write(obj: JumioAddress): JsValue = throw new UnsupportedOperationException("Conversion of JumioAddress to JSON isn't supported")
   }
 
-  implicit val jumioDocumentReader = jsonFormat(JumioDocument, "type", "issuingCountry", "firstName", "lastName", "dob", "expiry", "number", "address")
+  implicit val jumioDocumentReader = jsonFormat(JumioDocument.apply, "type", "subType", "issuingCountry", "firstName", "lastName", "dob", "expiry", "number", "personalNumber", "address")
 
   implicit val jumioScanReader = jsonFormat5(JumioScan)
 }
