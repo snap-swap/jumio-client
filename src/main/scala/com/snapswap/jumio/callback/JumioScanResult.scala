@@ -71,19 +71,23 @@ trait JumioScanResult {
   def checks: JumioChecks
   def timestamp: Option[DateTime]
   def callbackTimestamp: Option[DateTime]
+  def merchantScanReference: Option[String]
+  def customerId: Option[String]
+  def clientIp: Option[String]
+  def links: JumioScanLinks
 }
 
 case class JumioScanSuccess(scanReference: String, status: EnumJumioVerificationStatuses.JumioVerificationStatus,
                             source: EnumJumioSources.JumioSource, checks: JumioChecks,
                             timestamp: Option[DateTime], callbackTimestamp: Option[DateTime],
                             document: JumioDocument, faceMatch: Option[Int], faceLiveness: Option[Boolean],
-                            merchantScanReference: String, customerId: String,
-                            clientIp: String, additionalInformation: String, links: JumioScanLinks) extends JumioScanResult {
+                            merchantScanReference: Option[String], customerId: Option[String], clientIp: Option[String],
+                            additionalInformation: String, links: JumioScanLinks) extends JumioScanResult {
   override def toString: String = {
-    def orUnknown(opt: Option[DateTime]) = opt.map(_.toString).getOrElse("UNKNOWN")
+    def orUnknown(opt: Option[_]) = opt.map(_.toString).getOrElse("N/A")
     def faceDescr = faceMatch.map(p => p + "% faceMatch (looks " + (if (faceLiveness.getOrElse(false)) "alive" else "dead") + ")").getOrElse("faceMatch not performed")
-    s"$status $scanReference (merchantScanID=$merchantScanReference, customerID=$customerId) " +
-      s"from $source at IP $clientIp, scanned at ${orUnknown(timestamp)}, completed at ${orUnknown(callbackTimestamp)}, " +
+    s"$status $scanReference (merchantScanID=${orUnknown(merchantScanReference)}, customerID=${orUnknown(customerId)}) " +
+      s"from $source at IP ${orUnknown(clientIp)}, scanned at ${orUnknown(timestamp)}, completed at ${orUnknown(callbackTimestamp)}, " +
       s"$checks, $faceDescr, URLs [$links]: $document"
   }
 }
@@ -95,9 +99,9 @@ case class JumioScanFailure(scanReference: String, status: EnumJumioVerification
                             merchantScanReference: Option[String], customerId: Option[String], clientIp: Option[String],
                             links: JumioScanLinks) extends JumioScanResult {
   override def toString: String = {
-    def orUnknown(opt: Option[String]) = opt.getOrElse("UNKNOWN")
+    def orUnknown(opt: Option[_]) = opt.map(_.toString).getOrElse("N/A")
     s"$status $scanReference (merchantScanID=${orUnknown(merchantScanReference)}, customerID=${orUnknown(customerId)}) " +
-      s"from $source at IP ${orUnknown(clientIp)}, scanned at ${orUnknown(timestamp.map(_.toString))}, completed at ${orUnknown(callbackTimestamp.map(_.toString))}, " +
+      s"from $source at IP ${orUnknown(clientIp)}, scanned at ${orUnknown(timestamp)}, completed at ${orUnknown(callbackTimestamp)}, " +
       s"$checks, URLs [$links]: rejected as $rejectReason"
   }
 }
@@ -106,8 +110,7 @@ object JumioScanResult {
 
   def of(parameters: Map[String, String]): JumioScanResult = {
     def getString(name: String) = parameters.get(name)
-    val defaultString = "UNKNOWN"
-    def getOrUnknown(name: String) = getString(name).getOrElse(defaultString)
+    def getOrUnknown(name: String) = getString(name).getOrElse("UNKNOWN")
     def getTimestamp(name: String) = parameters.get(name).map(ISODateTimeFormat.dateTime().withZoneUTC().parseDateTime)
 
     def scanReference = getOrUnknown("jumioIdScanReference")
@@ -136,7 +139,7 @@ object JumioScanResult {
         timestamp, callbackTimestamp,
         JumioDocument.of(parameters),
         idFaceMatch, idFaceLiveness,
-        merchantIdScanReference.getOrElse(defaultString), customerId.getOrElse(defaultString), clientIp.getOrElse(defaultString),
+        merchantIdScanReference, customerId, clientIp,
         additionalInformation, JumioScanLinks.of(parameters)
       )
       case "ERROR" => JumioScanFailure(scanReference, status, source, checks, timestamp, callbackTimestamp, rejectReason,
