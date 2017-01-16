@@ -26,8 +26,8 @@ class JumioDirectivesSpec extends WordSpec with Matchers with Directives with Sc
     }
 
     Post("/", deniedFraud(scanRef)) ~> route ~> check {
-      responseAs[String] shouldEqual s"DENIED_FRAUD $scanRef (merchantScanID=xxxxxxxx, customerID=UNKNOWN) from SDK at IP 127.0.0.1, " +
-        s"scanned at UNKNOWN, completed at UNKNOWN, " +
+      responseAs[String] shouldEqual s"DENIED_FRAUD $scanRef (merchantScanID=xxxxxxxx, customerID=N/A) from SDK at IP 127.0.0.1, " +
+        s"scanned at N/A, completed at N/A, " +
         s"checked [dataPositions=N/A, documentValidation=N/A, hologram=N/A, mrzCode=N/A, microprint=N/A, securityFeatures=N/A, signature=N/A], " +
         s"URLs [idScanImage=https://lon.netverify.com/protected-image/yyyyyyyy, idScanImageBackside=N/A, idScanImageFace=N/A]: " +
         s"rejected as [100] MANIPULATED_DOCUMENT ([1001] PHOTO, [1004] DOB)"
