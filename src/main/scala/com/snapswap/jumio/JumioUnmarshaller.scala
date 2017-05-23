@@ -1,9 +1,10 @@
 package com.snapswap.jumio
 
-import scala.util.{Try, Success, Failure}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import spray.json._
+
+import scala.util.{Failure, Success, Try}
 
 trait JumioUnmarshaller extends DefaultJsonProtocol {
 
@@ -46,6 +47,8 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
   implicit val jumioRejectionFormat = jsonFormat(JumioRejection, "detailsCode", "detailsDescription")
   implicit val jumioRejectReasonFormat = jsonFormat(JumioRejectReason, "rejectReasonCode", "rejectReasonDescription", "rejectReasonDetails")
   implicit val jumioVerificationFormat = jsonFormat(JumioVerification, "mrzCheck", "faceMatch", "rejectReason")
+  implicit val jumioNetverifyParamsFormat = jsonFormat(JumioNetverifyInitParams, "merchantIdScanReference", "successUrl", "errorUrl", "customerId")
+  implicit val jumioNetverifyAuthTokenFormat = jsonFormat(JumioNetverifyInitResponse, "authorizationToken", "jumioIdScanReference", "timestamp")
 
   protected trait Address {
     def toAddress: JumioAddress

@@ -1,10 +1,10 @@
 name := "jumio-client"
 
-organization  := "com.snapswap"
+organization := "com.snapswap"
 
-version       := "1.0.2"
+version := "1.0.3"
 
-scalaVersion  := "2.11.8"
+scalaVersion := "2.11.8"
 
 scalacOptions := Seq(
   "-feature",
