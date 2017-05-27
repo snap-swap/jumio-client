@@ -13,12 +13,14 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
       case JsString(s) => enum.withName(s)
       case x => deserializationError("Expected Enum as JsString, but got " + x)
     }
+
     def write(v: enum.Value) = JsString(v.toString)
   }
 
   implicit val dateTimeFormat = new RootJsonFormat[DateTime] {
     private val df = ISODateTimeFormat.date().withZoneUTC()
     private val dtf = ISODateTimeFormat.dateTime().withZoneUTC()
+
     override def read(json: JsValue) = json match {
       case JsString(str) if str.contains("T") =>
         Try(dtf.parseDateTime(str)) match {
@@ -32,6 +34,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
         }
       case x => deserializationError("Expected DateTime as JsString, but got " + x)
     }
+
     override def write(obj: DateTime) = JsString(dtf.print(obj))
   }
 
@@ -39,6 +42,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
   implicit val enumJumioSourceFormat = enumNameFormat(EnumJumioSources)
   implicit val enumMRZCheckFormat = enumNameFormat(EnumJumioMRZCheck)
   implicit val enumJumioDocTypeFormat = enumNameFormat(EnumJumioDocTypes)
+  implicit val enumJumioMDDocumentStatusFormat = enumNameFormat(EnumJumioMDDocumentStatus)
 
   implicit val jumioScanStatusFormat = jsonFormat3(JumioScanStatus)
 
@@ -55,10 +59,10 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
   }
 
   protected case class USAddress(city: String, stateCode: Option[String],
-                                    streetName: String, streetSuffix: Option[String], streetDirection: Option[String],
-                                    streetNumber: Option[String], unitDesignator: Option[String], unitNumber: Option[String],
-                                    zip: String, zipExtension: Option[String], country: String
-                                   ) extends Address {
+                                 streetName: String, streetSuffix: Option[String], streetDirection: Option[String],
+                                 streetNumber: Option[String], unitDesignator: Option[String], unitNumber: Option[String],
+                                 zip: String, zipExtension: Option[String], country: String
+                                ) extends Address {
     def toAddress = JumioAddress(country = country, region = stateCode, city = city,
       postalCode = zip + zipExtension.map(v => s"-$v").getOrElse(""),
       streetAddress = (Some(streetName) ::
@@ -69,6 +73,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
         Nil).flatten.mkString,
       format = EnumJumioAddressFormats.us)
   }
+
   protected implicit val usAddressFormat = jsonFormat11(USAddress)
 
   protected case class EUAddress(city: String, province: Option[String], streetName: String,
@@ -81,6 +86,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
         Nil).flatten.mkString,
       format = EnumJumioAddressFormats.eu)
   }
+
   protected implicit val euAddressFormat = jsonFormat7(EUAddress)
 
   protected case class RawAddress(line1: String,
@@ -93,6 +99,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
         Nil).flatten.map(_.trim).mkString(" "),
       format = EnumJumioAddressFormats.raw)
   }
+
   protected implicit val rawAddressFormat = jsonFormat8(RawAddress)
 
   implicit val jumioAddressReader = new RootJsonFormat[JumioAddress] {
@@ -109,7 +116,33 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
     override def write(obj: JumioAddress): JsValue = throw new UnsupportedOperationException("Conversion of JumioAddress to JSON isn't supported")
   }
 
-  implicit val jumioDocumentReader = jsonFormat(JumioDocument.apply, "type", "subType", "issuingCountry", "firstName", "lastName", "dob", "expiry", "number", "personalNumber", "address")
+  implicit val jumioExtractedDataReader = new RootJsonFormat[JumioExtractedData] {
+    override def read(json: JsValue): JumioExtractedData = json match {
+      case obj: JsObject =>
+        val fields = obj.fields
+
+        JumioExtractedData(
+          fields.get("firstName").map(_.convertTo[String]),
+          fields.get("lastName").map(_.convertTo[String]),
+          fields.get("name").map(_.convertTo[String]),
+          fields.get("ssn").map(_.convertTo[String]),
+          fields.get("signatureAvailable").map(_.convertTo[Boolean]),
+          fields.get("accountNumber").map(_.convertTo[String]),
+          fields.get("issueDate").map(_.convertTo[String]),
+          fields.get("address").map(com.snapswap.jumio.unmarshaller.jumioAddressReader.read)
+        )
+      case x => deserializationError("Expected address as object, but got " + x)
+    }
+
+    override def write(obj: JumioExtractedData): JsValue = throw new UnsupportedOperationException("Conversion of JumioExtractedData to JSON isn't supported")
+  }
+
+  {
+
+    jsonFormat(JumioExtractedData.apply, "firstName", "lastName", "name", "ssn", "signatureAvailable", "accountNumber", "issueDate", "address")
+  }
+
+  implicit val jumioDocumentReader = jsonFormat(JumioDocument.apply, "type", "subType", "issuingCountry", "firstName", "lastName", "dob", "expiry", "number", "personalNumber", "address", "extractedData", "status")
 
   implicit val jumioScanReader = jsonFormat5(JumioScan)
 }

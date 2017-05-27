@@ -1,13 +1,18 @@
 package com.snapswap.jumio.callback
 
 import org.joda.time.DateTime
-import org.joda.time.format.ISODateTimeFormat
 import akka.http.scaladsl.model.Uri
 import com.snapswap.jumio._
 
-case class JumioChecks(dataPositions: Boolean, documentValidation: Boolean, hologram: Boolean, mrzCode: Boolean,
-                       microprint: Boolean, securityFeatures: Boolean, signature: Boolean) {
+case class JumioChecks(dataPositions: Boolean,
+                       documentValidation: Boolean,
+                       hologram: Boolean,
+                       mrzCode: Boolean,
+                       microprint: Boolean,
+                       securityFeatures: Boolean,
+                       signature: Boolean) {
   private def okOrNA(check: Boolean) = if (check) "OK" else "N/A"
+
   override def toString: String = (
     "dataPositions=" + okOrNA(dataPositions) ::
       "documentValidation=" + okOrNA(documentValidation) ::
@@ -40,6 +45,7 @@ object JumioChecks {
 case class JumioScanLinks(frontImage: Option[Uri], backImage: Option[Uri], faceImage: Option[Uri]) {
   override def toString: String = {
     def urlOrNA(uri: Option[Uri]) = uri.map(_.toString()).getOrElse("N/A")
+
     ("idScanImage=" + urlOrNA(frontImage) ::
       "idScanImageBackside=" + urlOrNA(backImage) ::
       "idScanImageFace=" + urlOrNA(faceImage) ::
@@ -50,12 +56,14 @@ case class JumioScanLinks(frontImage: Option[Uri], backImage: Option[Uri], faceI
 object JumioScanLinks {
   def of(parameters: Map[String, String]): JumioScanLinks = {
     def getUri(name: String): Option[Uri] = parameters.get(name).map(Uri.apply)
+
     val idScanImage = getUri("idScanImage")
     val idScanImageBackside = getUri("idScanImageBackside")
     val idScanImageFace = getUri("idScanImageFace")
 
     JumioScanLinks(idScanImage, idScanImageBackside, idScanImageFace)
   }
+
   def of(str: String): JumioScanLinks = of(str.split(',').map(_.trim).flatMap { kv =>
     val arr = kv.split('=')
     val key = if (arr.length > 0) Some(arr(0)) else None
@@ -66,42 +74,66 @@ object JumioScanLinks {
 
 trait JumioScanResult {
   def scanReference: String
+
   def status: EnumJumioVerificationStatuses.JumioVerificationStatus
+
   def source: EnumJumioSources.JumioSource
+
   def checks: JumioChecks
+
   def timestamp: Option[DateTime]
+
   def callbackTimestamp: Option[DateTime]
+
   def merchantScanReference: Option[String]
+
   def customerId: Option[String]
+
   def clientIp: Option[String]
+
   def links: JumioScanLinks
 }
 
-case class JumioScanSuccess(scanReference: String, status: EnumJumioVerificationStatuses.JumioVerificationStatus,
-                            source: EnumJumioSources.JumioSource, checks: JumioChecks,
-                            timestamp: Option[DateTime], callbackTimestamp: Option[DateTime],
-                            document: JumioDocument, faceMatch: Option[Int], faceLiveness: Option[Boolean],
-                            merchantScanReference: Option[String], customerId: Option[String], clientIp: Option[String],
-                            additionalInformation: String, links: JumioScanLinks) extends JumioScanResult {
+case class JumioScanSuccess(scanReference: String,
+                            status: EnumJumioVerificationStatuses.JumioVerificationStatus,
+                            source: EnumJumioSources.JumioSource,
+                            checks: JumioChecks,
+                            timestamp: Option[DateTime],
+                            callbackTimestamp: Option[DateTime],
+                            document: JumioDocument,
+                            faceMatch: Option[Int],
+                            faceLiveness: Option[Boolean],
+                            merchantScanReference: Option[String],
+                            customerId: Option[String],
+                            clientIp: Option[String],
+                            additionalInformation: String,
+                            links: JumioScanLinks) extends JumioScanResult {
   override def toString: String = {
-    def orUnknown(opt: Option[_]) = opt.map(_.toString).getOrElse("N/A")
+    import RichToString._
+
     def faceDescr = faceMatch.map(p => p + "% faceMatch (looks " + (if (faceLiveness.getOrElse(false)) "alive" else "dead") + ")").getOrElse("faceMatch not performed")
-    s"$status $scanReference (merchantScanID=${orUnknown(merchantScanReference)}, customerID=${orUnknown(customerId)}) " +
-      s"from $source at IP ${orUnknown(clientIp)}, scanned at ${orUnknown(timestamp)}, completed at ${orUnknown(callbackTimestamp)}, " +
+
+    s"$status $scanReference (merchantScanID=${merchantScanReference.orUnknown}, customerID=${customerId.orUnknown}) " +
+      s"from $source at IP ${clientIp.orUnknown}, scanned at ${timestamp.orUnknown}, completed at ${callbackTimestamp.orUnknown}, " +
       s"$checks, $faceDescr, URLs [$links]: $document"
   }
 }
 
-case class JumioScanFailure(scanReference: String, status: EnumJumioVerificationStatuses.JumioVerificationStatus,
+case class JumioScanFailure(scanReference: String,
+                            status: EnumJumioVerificationStatuses.JumioVerificationStatus,
                             source: EnumJumioSources.JumioSource, checks: JumioChecks,
-                            timestamp: Option[DateTime], callbackTimestamp: Option[DateTime],
+                            timestamp: Option[DateTime],
+                            callbackTimestamp: Option[DateTime],
                             rejectReason: JumioRejectReason,
-                            merchantScanReference: Option[String], customerId: Option[String], clientIp: Option[String],
+                            merchantScanReference: Option[String],
+                            customerId: Option[String],
+                            clientIp: Option[String],
                             links: JumioScanLinks) extends JumioScanResult {
   override def toString: String = {
-    def orUnknown(opt: Option[_]) = opt.map(_.toString).getOrElse("N/A")
-    s"$status $scanReference (merchantScanID=${orUnknown(merchantScanReference)}, customerID=${orUnknown(customerId)}) " +
-      s"from $source at IP ${orUnknown(clientIp)}, scanned at ${orUnknown(timestamp)}, completed at ${orUnknown(callbackTimestamp)}, " +
+    import RichToString._
+
+    s"$status $scanReference (merchantScanID=${merchantScanReference.orUnknown}, customerID=${customerId.orUnknown}) " +
+      s"from $source at IP ${clientIp.orUnknown}, scanned at ${timestamp.orUnknown}, completed at ${callbackTimestamp.orUnknown}, " +
       s"$checks, URLs [$links]: rejected as $rejectReason"
   }
 }
@@ -109,27 +141,36 @@ case class JumioScanFailure(scanReference: String, status: EnumJumioVerification
 object JumioScanResult {
 
   def of(parameters: Map[String, String]): JumioScanResult = {
-    def getString(name: String) = parameters.get(name)
-    def getOrUnknown(name: String) = getString(name).getOrElse("UNKNOWN")
-    def getTimestamp(name: String) = parameters.get(name).map(ISODateTimeFormat.dateTime().withZoneUTC().parseDateTime)
+    import Extractors._
 
-    def scanReference = getOrUnknown("jumioIdScanReference")
-    def status = EnumJumioVerificationStatuses.withName(getOrUnknown("verificationStatus"))
-    def source = EnumJumioSources.withName(getOrUnknown("idScanSource"))
+    def scanReference = parameters.getOrUnknown("jumioIdScanReference")
+
+    def status = EnumJumioVerificationStatuses.withName(parameters.getOrUnknown("verificationStatus"))
+
+    def source = EnumJumioSources.withName(parameters.getOrUnknown("idScanSource"))
+
     def checks = JumioChecks.of(parameters)
-    def timestamp = getTimestamp("transactionDate")
-    def callbackTimestamp = getTimestamp("callbackDate")
+
+    def timestamp = parameters.getTimestamp("transactionDate")
+
+    def callbackTimestamp = parameters.getTimestamp("callbackDate")
 
     def idFaceMatch = parameters.get("idFaceMatch").map(_.toInt)
+
     def idFaceLiveness = parameters.get("idFaceLiveness").map(_.equalsIgnoreCase("true"))
-    def merchantIdScanReference = getString("merchantIdScanReference")
-    def customerId = getString("customerId")
-    def clientIp = getString("clientIp")
-    def additionalInformation = getOrUnknown("additionalInformation")
+
+    def merchantIdScanReference = parameters.getString("merchantIdScanReference")
+
+    def customerId = parameters.getString("customerId")
+
+    def clientIp = parameters.getString("clientIp")
+
+    def additionalInformation = parameters.getOrUnknown("additionalInformation")
 
     def rejectReason = {
       import spray.json._
       import com.snapswap.jumio.unmarshaller._
+
       parameters.get("rejectReason").map(_.parseJson.convertTo[JumioRejectReason])
         .getOrElse(JumioRejectReason("UNKNOWN", "UNKNOWN", Seq()))
     }

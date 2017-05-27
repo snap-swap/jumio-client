@@ -27,6 +27,8 @@ object EnumJumioSources extends Enumeration {
   //Netverify Mobile
   val sdk = Value("SDK")
 
+  val doc_api = Value("DOC_API")
+
   val unknown = Value("UNKNOWN")
 }
 
@@ -49,41 +51,54 @@ object EnumJumioMRZCheck extends Enumeration {
   val not_available = Value("NOT_AVAILABLE")
 }
 
-case class JumioScanStatus(timestamp: DateTime, scanReference: String, status: EnumJumioTxStatuses.JumioTxStatus) {
-  override def toString = s"$timestamp: '$scanReference' is $status"
+case class JumioScanStatus(timestamp: DateTime,
+                           scanReference: String,
+                           status: EnumJumioTxStatuses.JumioTxStatus) {
+  override def toString: String = s"$timestamp: '$scanReference' is $status"
 }
 
-case class JumioScan(timestamp: DateTime, scanReference: String,
+case class JumioScan(timestamp: DateTime,
+                     scanReference: String,
                      transaction: JumioTx,
                      document: JumioDocument,
                      verification: Option[JumioVerification]) {
-  override def toString = s"timestamp: '$scanReference' is $transaction"
+  override def toString: String = s"timestamp: '$scanReference' is $transaction"
 }
 
-case class JumioTx(status: EnumJumioTxStatuses.JumioTxStatus, source: EnumJumioSources.JumioSource, date: DateTime,
-                   clientIp: Option[String], customerId: Option[String], additionalInformation: Option[String],
-                   merchantScanReference: Option[String], merchantReportingCriteria: Option[String]) {
-  override def toString =
-    (Some(s"$status, received at $date from $source") ::
-      clientIp.map(v => s" $v IP") ::
-      customerId.map(v => s" of $v customer") ::
-      merchantScanReference.map(v => s", $v merchant scan ref") ::
-      merchantReportingCriteria.map(v => s", $v merchant reporting criteria") ::
-      additionalInformation.map(v => s", '$v'") :: Nil).flatten.mkString
+case class JumioTx(status: EnumJumioTxStatuses.JumioTxStatus,
+                   source: EnumJumioSources.JumioSource,
+                   date: DateTime,
+                   clientIp: Option[String],
+                   customerId: Option[String],
+                   additionalInformation: Option[String],
+                   merchantScanReference: Option[String],
+                   merchantReportingCriteria: Option[String]) {
+  override def toString: String =
+    (
+      Some(s"$status, received at $date from $source") ::
+        clientIp.map(v => s" $v IP") ::
+        customerId.map(v => s" of $v customer") ::
+        merchantScanReference.map(v => s", $v merchant scan ref") ::
+        merchantReportingCriteria.map(v => s", $v merchant reporting criteria") ::
+        additionalInformation.map(v => s", '$v'") :: Nil
+      ).flatten.mkString
 }
 
-case class JumioRejection(code: String, description: String) {
-  override def toString = s"[$code] $description"
+case class JumioRejection(code: String,
+                          description: String) {
+  override def toString: String = s"[$code] $description"
 }
 
-case class JumioRejectReason(code: String, description: String, details: Seq[JumioRejection]) {
+case class JumioRejectReason(code: String,
+                             description: String,
+                             details: Seq[JumioRejection]) {
   override def toString: String = {
     s"[$code] $description" + (
       if (details.isEmpty)
         ""
       else
         " " + details.map(s => s"[${s.code}] ${s.description}").mkString("(", ", ", ")")
-    )
+      )
   }
 }
 
