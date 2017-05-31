@@ -23,6 +23,7 @@ trait JumioClient {
   def scanDetails(scanReference: String): Future[JumioScan]
 
   def initNetverify(merchantScanReference: String,
+                    redirectUrl: String,
                     callbackUrl: String,
                     customerId: String): Future[JumioNetverifyInitResponse]
 }
@@ -103,9 +104,10 @@ class AkkaHttpJumioClient(clientToken: String, clientSecret: String,
   }
 
   override def initNetverify(merchantScanReference: String,
+                             redirectUrl: String,
                              callbackUrl: String,
                              customerId: String): Future[JumioNetverifyInitResponse] = {
-    val params = JumioNetverifyInitParams(merchantScanReference, callbackUrl, callbackUrl, customerId)
+    val params = JumioNetverifyInitParams(merchantScanReference, redirectUrl, redirectUrl, callbackUrl, customerId)
     post("/initiateNetverify", params.toJson) { response =>
       response.convertTo[JumioNetverifyInitResponse]
     }

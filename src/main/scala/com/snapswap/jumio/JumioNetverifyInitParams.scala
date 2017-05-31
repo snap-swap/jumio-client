@@ -6,6 +6,7 @@ import org.joda.time.DateTime
 case class JumioNetverifyInitParams(merchantScanReference: String,
                                     successUrl: String,
                                     errorUrl: String,
+                                    callbackUrl: String,
                                     customerId: String)
 
 case class JumioNetverifyInitResponse(authorizationToken: String,

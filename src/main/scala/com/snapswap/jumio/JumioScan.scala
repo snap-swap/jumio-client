@@ -13,13 +13,13 @@ object EnumJumioSources extends Enumeration {
   type JumioSource = Value
   // Netverify Web embedded
   val web = Value("WEB")
-  val web_cam = Value("WEB-CAM")
-  val web_upload = Value("WEB-UPLOAD")
+  val web_cam = Value("WEB_CAM")
+  val web_upload = Value("WEB_UPLOAD")
 
   // Netverify Web redirect
   val redirect = Value("REDIRECT")
-  val redirect_cam = Value("REDIRECT-CAM")
-  val redirect_upload = Value("REDIRECT-UPLOAD")
+  val redirect_cam = Value("REDIRECT_CAM")
+  val redirect_upload = Value("REDIRECT_UPLOAD")
 
   // performNetverify
   val api = Value("API")
