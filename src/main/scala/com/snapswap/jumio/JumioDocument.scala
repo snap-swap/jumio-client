@@ -69,8 +69,7 @@ case class JumioDocument(`type`: Option[EnumJumioDocTypes.JumioDocType],
                          personalNumber: Option[String],
                          address: Option[JumioAddress],
                          extractedData: Option[JumioExtractedData],
-                         status: Option[EnumJumioMDDocumentStatus.JumioMDDocumentStatus]
-                        ) {
+                         status: Option[EnumJumioMDDocumentStatus.JumioMDDocumentStatus]) {
   override def toString: String = `type` match {
     case None => "N/A"
     case Some(t) => (issuingCountry.map(v => s"$v ") :: Some(t.toString) ::
@@ -107,13 +106,22 @@ object JumioDocument {
 
     def personalNumber = parameters.get("personalNumber")
 
-    def idAddress = parameters.get("idAddress").map(s => com.snapswap.jumio.unmarshaller.jumioAddressReader.read(s.parseJson))
+    def idAddress = parameters.get("idAddress").map(s =>
+      com.snapswap.jumio.unmarshaller.jumioAddressReader.read(s.parseJson)
+    )
 
-    def extractedData = parameters.get("extractedData").map(s => com.snapswap.jumio.unmarshaller.jumioExtractedDataReader.read(s.parseJson))
+    def extractedData = parameters.get("extractedData").map(s =>
+      com.snapswap.jumio.unmarshaller.jumioExtractedDataReader.read(s.parseJson)
+    )
 
-    def status = parameters.get("status").map(s => com.snapswap.jumio.unmarshaller.enumJumioMDDocumentStatusFormat.read(s.parseJson))
+    def status = parameters.get("status").map(s =>
+      com.snapswap.jumio.unmarshaller.enumJumioMDDocumentStatusFormat.read(s.parseJson)
+    )
 
-    JumioDocument(idType, idSubtype, idCountry, idFirstName, idLastName, idDob, idExpiry, idNumber, personalNumber, idAddress, extractedData, status)
+    JumioDocument(
+      idType, idSubtype, idCountry, idFirstName, idLastName, idDob, idExpiry,
+      idNumber, personalNumber, idAddress, extractedData, status
+    )
   }
 
   private val localDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd")
@@ -126,6 +134,11 @@ object EnumJumioAddressFormats extends Enumeration {
   val us, eu, raw = Value
 }
 
-case class JumioAddress(country: String, region: Option[String], city: String, postalCode: String, streetAddress: String, protected val format: EnumJumioAddressFormats.JumioAddressFormat) {
+case class JumioAddress(country: String,
+                        region: Option[String],
+                        city: String,
+                        postalCode: String,
+                        streetAddress: String,
+                        protected val format: EnumJumioAddressFormats.JumioAddressFormat) {
   override def toString = s"$streetAddress, $postalCode $city, $country"
 }

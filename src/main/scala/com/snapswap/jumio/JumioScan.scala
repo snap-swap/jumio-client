@@ -30,6 +30,9 @@ object EnumJumioSources extends Enumeration {
   val doc_api = Value("DOC_API")
 
   val unknown = Value("UNKNOWN")
+
+  //Netverify multi document
+  val doc_upload = Value("DOC_UPLOAD")
 }
 
 object EnumJumioVerificationStatuses extends Enumeration {

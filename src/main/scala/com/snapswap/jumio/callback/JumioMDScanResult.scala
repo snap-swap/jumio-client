@@ -1,10 +1,17 @@
 package com.snapswap.jumio.callback
 
 import com.snapswap.jumio._
+import org.joda.time.LocalDate
+import org.joda.time.format.DateTimeFormat
 
 
-trait JumioMDScanResult {
-  def scanReference: String
+trait JumioMDScanResult extends JumioNetverifyResult {
+
+  override def merchantScanReference: String
+
+  override def scanReference: String
+
+  override def source: EnumJumioSources.JumioSource
 
   def firstName: Option[String]
 
@@ -18,19 +25,22 @@ trait JumioMDScanResult {
 
   def accountNumber: Option[String]
 
-  def issueDate: Option[String]
+  def issueDateRawFormat: Option[String]
 
   def address: Option[JumioAddress]
 }
 
-case class JumioMDScanSuccess(scanReference: String,
+case class JumioMDScanSuccess(docType: EnumJumioDocTypes.JumioDocType,
+                              merchantScanReference: String,
+                              scanReference: String,
+                              source: EnumJumioSources.JumioSource,
                               firstName: Option[String],
                               lastName: Option[String],
                               name: Option[String],
                               ssn: Option[String],
                               signatureAvailable: Option[Boolean],
                               accountNumber: Option[String],
-                              issueDate: Option[String],
+                              issueDateRawFormat: Option[String],
                               address: Option[JumioAddress]) extends JumioMDScanResult {
   override def toString: String = {
     import RichToString._
@@ -43,53 +53,94 @@ case class JumioMDScanSuccess(scanReference: String,
       s", ssn=${ssn.orUnknown}" +
       s", signatureAvailable=${signatureAvailable.orUnknown}" +
       s", accountNumber=${accountNumber.orUnknown}" +
-      s", issueDate=${issueDate.orUnknown}" +
+      s", issueDate=${issueDateRawFormat.orUnknown}" +
       s", address=[${address.orUnknown}]" +
       "]"
   }
+
+  private val localDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd")
+
+  private def localDate(`yyyy-MM-dd`: String): LocalDate = LocalDate.parse(`yyyy-MM-dd`, localDateFormat)
+
+  val issueDate: Option[LocalDate] = issueDateRawFormat.map(localDate)
 }
 
-case class JumioMDScanFailure(scanReference: String,
-                              reason: String) extends JumioMDScanResult {
+case class JumioMDScanFailure(merchantScanReference: String,
+                              scanReference: String,
+                              source: EnumJumioSources.JumioSource,
+                              override val error: String,
+                              override val details: String) extends JumioMDScanResult with JumioNetverifyFailure {
   val firstName: Option[String] = None
   val lastName: Option[String] = None
   val name: Option[String] = None
   val ssn: Option[String] = None
   val signatureAvailable: Option[Boolean] = None
   val accountNumber: Option[String] = None
-  val issueDate: Option[String] = None
+  val issueDateRawFormat: Option[String] = None
   val address: Option[JumioAddress] = None
 
   override def toString: String = {
-    s"FAILURE multi document callback scanReference=$scanReference] with reason [$reason]"
+    s"FAILURE multi document callback scanReference=$scanReference] with reason [$details]"
   }
 }
 
 object JumioMDScanResult {
   def of(parameters: Map[String, String]): JumioMDScanResult = {
-    parseTxStatus(parameters) match {
-      case EnumJumioTxStatuses.done =>
+    parseJumioTx(parameters) match {
+      case Some(JumioTx(status, source, _, _, _, _, Some(merchantScanReference), _)) if status == EnumJumioTxStatuses.done =>
         parseDocument(parameters) match {
-          case Some(JumioDocument(_, _, _, _, _, _, _, _, _, _, extractedData, Some(status))) if status == EnumJumioMDDocumentStatus.EXTRACTED || status == EnumJumioMDDocumentStatus.UPLOADED =>
+          case Some(JumioDocument(docType, _, _, _, _, _, _, _, _, _, extractedData, Some(docStatus)))
+            if docStatus == EnumJumioMDDocumentStatus.EXTRACTED || docStatus == EnumJumioMDDocumentStatus.UPLOADED =>
             JumioMDScanSuccess(
+              docType = docType.getOrElse(throw new RuntimeException(s"document type must be in provided")),
+              merchantScanReference = merchantScanReference,
               scanReference = parseScanReference(parameters),
+              source = source,
               firstName = extractedData.flatMap(_.firstName),
               lastName = extractedData.flatMap(_.lastName),
               name = extractedData.flatMap(_.name),
               ssn = extractedData.flatMap(_.ssn),
               signatureAvailable = extractedData.flatMap(_.signatureAvailable),
               accountNumber = extractedData.flatMap(_.accountNumber),
-              issueDate = extractedData.flatMap(_.issueDate),
+              issueDateRawFormat = extractedData.flatMap(_.issueDate),
               address = extractedData.flatMap(_.address)
             )
-          case Some(JumioDocument(_, _, _, _, _, _, _, _, _, _, extractedData, Some(status))) if status == EnumJumioMDDocumentStatus.DISCARDED =>
-            JumioMDScanFailure(parseScanReference(parameters), s"Expected transaction status is 'EXTRACTED' or 'UPLOADED' but found 'DISCARDED'")
+          case Some(JumioDocument(_, _, _, _, _, _, _, _, _, _, _, Some(docStatus)))
+            if docStatus == EnumJumioMDDocumentStatus.DISCARDED =>
+            JumioMDScanFailure(
+              merchantScanReference = merchantScanReference,
+              scanReference = parseScanReference(parameters),
+              source = source,
+              error = docStatus.toString,
+              s"Expected transaction status is 'EXTRACTED' or 'UPLOADED' but found 'DISCARDED'"
+            )
           case other =>
-            JumioMDScanFailure(parseScanReference(parameters), s"Unknown callback format '$other'")
+            JumioMDScanFailure(
+              merchantScanReference = merchantScanReference,
+              scanReference = parseScanReference(parameters),
+              source = source,
+              error = "Unknown callback format",
+              s"Unknown callback format: '$other'"
+            )
         }
-
-      case other =>
-        JumioMDScanFailure(parseScanReference(parameters), s"Expected transaction status is 'done' but found '$other'")
+      case Some(JumioTx(status, source, _, _, _, _, Some(merchantScanReference), _)) if status != EnumJumioTxStatuses.done =>
+        JumioMDScanFailure(
+          merchantScanReference = merchantScanReference,
+          scanReference = parseScanReference(parameters),
+          source = source,
+          error = status.toString,
+          s"Expected transaction status is 'done' but found '$status'"
+        )
+      case Some(JumioTx(_, source, _, _, _, _, None, _)) =>
+        JumioMDScanFailure(
+          merchantScanReference = "N/A",
+          scanReference = parseScanReference(parameters),
+          source = source,
+          error = "merchantScanReference must be presented",
+          s"merchantScanReference must be presented"
+        )
+      case None =>
+        throw new RuntimeException(s"JumioTx must be in callback")
     }
   }
 
@@ -97,22 +148,21 @@ object JumioMDScanResult {
     parameters.getOrElse("scanReference", throw new RuntimeException(s"scanReference must be in callback"))
   }
 
-  private def parseTxStatus(parameters: Map[String, String]): EnumJumioTxStatuses.JumioTxStatus = {
-    import spray.json._
-    import com.snapswap.jumio.unmarshaller._
-
-    parameters
-      .get("transaction")
-      .map(_.parseJson.convertTo[JumioTx].status)
-      .getOrElse(EnumJumioTxStatuses.failed)
-  }
-
   private def parseDocument(parameters: Map[String, String]): Option[JumioDocument] = {
-    import spray.json._
     import com.snapswap.jumio.unmarshaller._
+    import spray.json._
 
     parameters
       .get("document")
       .map(_.parseJson.convertTo[JumioDocument])
+  }
+
+  private def parseJumioTx(parameters: Map[String, String]): Option[JumioTx] = {
+    import com.snapswap.jumio.unmarshaller._
+    import spray.json._
+
+    parameters
+      .get("transaction")
+      .map(_.parseJson.convertTo[JumioTx])
   }
 }

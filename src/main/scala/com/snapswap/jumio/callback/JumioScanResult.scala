@@ -72,12 +72,12 @@ object JumioScanLinks {
   }.toMap)
 }
 
-trait JumioScanResult {
-  def scanReference: String
+trait JumioScanResult extends JumioNetverifyResult{
+  override def scanReference: String
 
   def status: EnumJumioVerificationStatuses.JumioVerificationStatus
 
-  def source: EnumJumioSources.JumioSource
+  override def source: EnumJumioSources.JumioSource
 
   def checks: JumioChecks
 
@@ -85,7 +85,7 @@ trait JumioScanResult {
 
   def callbackTimestamp: Option[DateTime]
 
-  def merchantScanReference: Option[String]
+  override def merchantScanReference: String
 
   def customerId: Option[String]
 
@@ -103,7 +103,7 @@ case class JumioScanSuccess(scanReference: String,
                             document: JumioDocument,
                             faceMatch: Option[Int],
                             faceLiveness: Option[Boolean],
-                            merchantScanReference: Option[String],
+                            merchantScanReference: String,
                             customerId: Option[String],
                             clientIp: Option[String],
                             additionalInformation: String,
@@ -113,7 +113,7 @@ case class JumioScanSuccess(scanReference: String,
 
     def faceDescr = faceMatch.map(p => p + "% faceMatch (looks " + (if (faceLiveness.getOrElse(false)) "alive" else "dead") + ")").getOrElse("faceMatch not performed")
 
-    s"$status $scanReference (merchantScanID=${merchantScanReference.orUnknown}, customerID=${customerId.orUnknown}) " +
+    s"$status $scanReference (merchantScanID=$merchantScanReference, customerID=${customerId.orUnknown}) " +
       s"from $source at IP ${clientIp.orUnknown}, scanned at ${timestamp.orUnknown}, completed at ${callbackTimestamp.orUnknown}, " +
       s"$checks, $faceDescr, URLs [$links]: $document"
   }
@@ -125,17 +125,21 @@ case class JumioScanFailure(scanReference: String,
                             timestamp: Option[DateTime],
                             callbackTimestamp: Option[DateTime],
                             rejectReason: JumioRejectReason,
-                            merchantScanReference: Option[String],
+                            merchantScanReference: String,
                             customerId: Option[String],
                             clientIp: Option[String],
-                            links: JumioScanLinks) extends JumioScanResult {
+                            links: JumioScanLinks) extends JumioScanResult with JumioNetverifyFailure {
   override def toString: String = {
     import RichToString._
 
-    s"$status $scanReference (merchantScanID=${merchantScanReference.orUnknown}, customerID=${customerId.orUnknown}) " +
+    s"$status $scanReference (merchantScanID=$merchantScanReference, customerID=${customerId.orUnknown}) " +
       s"from $source at IP ${clientIp.orUnknown}, scanned at ${timestamp.orUnknown}, completed at ${callbackTimestamp.orUnknown}, " +
       s"$checks, URLs [$links]: rejected as $rejectReason"
   }
+
+  override def error = status.toString
+
+  override def details = rejectReason.toString
 }
 
 object JumioScanResult {
@@ -159,7 +163,7 @@ object JumioScanResult {
 
     def idFaceLiveness = parameters.get("idFaceLiveness").map(_.equalsIgnoreCase("true"))
 
-    def merchantIdScanReference = parameters.getString("merchantIdScanReference")
+    def merchantIdScanReference = parameters.getOrUnknown("merchantIdScanReference")
 
     def customerId = parameters.getString("customerId")
 

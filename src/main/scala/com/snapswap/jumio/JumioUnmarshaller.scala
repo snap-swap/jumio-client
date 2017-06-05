@@ -53,11 +53,17 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
     "rejectReasonCode", "rejectReasonDescription", "rejectReasonDetails"
   )
   implicit val jumioVerificationFormat = jsonFormat(JumioVerification, "mrzCheck", "faceMatch", "rejectReason")
-  implicit val jumioNetverifyParamsFormat = jsonFormat(JumioNetverifyInitParams,
+  implicit val jumioNetverifyInitParamsFormat = jsonFormat(JumioNetverifyInitParams,
     "merchantIdScanReference", "successUrl", "errorUrl", "callbackUrl", "customerId"
   )
-  implicit val jumioNetverifyAuthTokenFormat = jsonFormat(JumioNetverifyInitResponse,
+  implicit val jumioNetverifyInitResponseFormat = jsonFormat(JumioNetverifyInitResponse,
     "authorizationToken", "jumioIdScanReference", "timestamp"
+  )
+  implicit val jumioMdNetverifyInitParamsFormat = jsonFormat(JumioMdNetverifyInitParams,
+    "merchantScanReference", "successUrl", "errorUrl", "callbackUrl", "customerId", "country", "type"
+  )
+  implicit val jumioMdNetverifyInitResponseFormat = jsonFormat(JumioMdNetverifyInitResponse,
+    "scanReference", "clientRedirectUrl"
   )
 
   protected trait Address {
