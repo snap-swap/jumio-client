@@ -1,19 +1,46 @@
 package com.snapswap.jumio
 
 import org.joda.time.{DateTime, DateTimeZone}
-import spray.json._
 import org.scalatest._
+import spray.json._
 
-class UnmarshallerSpec extends FlatSpec with Matchers {
+class UnmarshallerSpec extends WordSpec with Matchers {
 
   import unmarshaller._
 
-  "Unmarshaller" should "parse details of PENDING scan " in {
-    val result = pendingScan.parseJson.convertTo[JumioScan]
-    result.transaction.status shouldBe EnumJumioTxStatuses.pending
-    result.transaction.source shouldBe EnumJumioSources.sdk
-    result.transaction.date shouldBe DateTime.now(DateTimeZone.UTC).withDate(2016, 1, 1).withTime(0, 0, 0, 0)
+  "Unmarshaller" should {
+    "parse details of PENDING scan " in {
+      val result = pendingScan.parseJson.convertTo[JumioScan]
+      result.transaction.status shouldBe EnumJumioTxStatuses.pending
+      result.transaction.source shouldBe EnumJumioSources.sdk
+      result.transaction.date shouldBe DateTime.now(DateTimeZone.UTC).withDate(2016, 1, 1).withTime(0, 0, 0, 0)
+    }
+    "parse JumioImagesInfo" in {
+      val result = jumioImagesInfo.parseJson.convertTo[JumioImagesInfo]
+      result.timestamp shouldBe "2017-06-08T05:41:22.294+0000"
+      result.scanReference shouldBe "e6c76aa8-e2c2-479e-a586-b5380dc6f14a"
+      result.images.head shouldBe a[JumioImage]
+    }
+    "parse JumioImage" in {
+      val result = jumioImage.parseJson.convertTo[JumioImage]
+      result.classifier shouldBe "1"
+      result.href shouldBe "https://retrieval.netverify.com/api/netverify/v2/documents/e6c76aa8-e2c2-479e-a586-b5380dc6f14a/pages/1"
+      result.maskhint shouldBe None
+    }
   }
+
+  val jumioImage =
+    """{
+      |"classifier":1,
+      |"href":"https://retrieval.netverify.com/api/netverify/v2/documents/e6c76aa8-e2c2-479e-a586-b5380dc6f14a/pages/1"
+      |}""".stripMargin
+
+  val jumioImagesInfo =
+    s"""{
+       |"timestamp":"2017-06-08T05:41:22.294+0000",
+       |"images":[$jumioImage],
+       |"scanReference":"e6c76aa8-e2c2-479e-a586-b5380dc6f14a"
+       |}""".stripMargin
 
   val pendingScan =
     """{

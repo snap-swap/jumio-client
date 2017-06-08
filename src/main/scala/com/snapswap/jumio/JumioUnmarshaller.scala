@@ -43,6 +43,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
   implicit val enumMRZCheckFormat = enumNameFormat(EnumJumioMRZCheck)
   implicit val enumJumioDocTypeFormat = enumNameFormat(EnumJumioDocTypes)
   implicit val enumJumioMDDocumentStatusFormat = enumNameFormat(EnumJumioMDDocumentStatus)
+  implicit val enumJumioImageMaskHintFormat = enumNameFormat(EnumJumioImageMaskHint)
 
   implicit val jumioScanStatusFormat = jsonFormat3(JumioScanStatus)
 
@@ -157,6 +158,41 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
   implicit val jumioDocumentReader = jsonFormat(JumioDocument.apply, "type", "subType", "issuingCountry", "firstName", "lastName", "dob", "expiry", "number", "personalNumber", "address", "extractedData", "status")
 
   implicit val jumioScanReader = jsonFormat5(JumioScan)
+
+
+  implicit val jumioImageFormat = new RootJsonFormat[JumioImage] {
+    override def read(json: JsValue): JumioImage = {
+      val f = json.asJsObject.fields
+      val (href, maskhint, classifier) = (
+        f("href").convertTo[String],
+        f.get("maskhint").map(_.convertTo[EnumJumioImageMaskHint.ImageMaskHint]),
+        f("classifier") match {
+          case JsNumber(c) =>
+            c.toInt.toString
+          case JsString(s) =>
+            s
+          case _ =>
+            throw JumioMalformedResponse(s"can't deserialize ${json.prettyPrint} to JumioImage")
+        }
+      )
+
+      JumioImage(classifier = classifier, href = href, maskhint = maskhint)
+    }
+
+    override def write(obj: JumioImage): JsValue = {
+      val fields = Map("classifier" -> obj.classifier.toJson, "href" -> obj.href.toJson)
+      obj.maskhint
+        .map { m =>
+          fields + ("maskhint" -> m.toJson)
+        }
+        .getOrElse(fields)
+        .toJson
+    }
+  }
+
+  implicit val jumioImagesInfoFormat = jsonFormat(JumioImagesInfo,
+    "timestamp", "scanReference", "images"
+  )
 }
 
 object unmarshaller extends JumioUnmarshaller
