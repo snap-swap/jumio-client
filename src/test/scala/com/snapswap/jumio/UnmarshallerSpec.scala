@@ -27,6 +27,44 @@ class UnmarshallerSpec extends WordSpec with Matchers {
       result.href shouldBe "https://retrieval.netverify.com/api/netverify/v2/documents/e6c76aa8-e2c2-479e-a586-b5380dc6f14a/pages/1"
       result.maskhint shouldBe None
     }
+    "parse JumioRejectReason" when {
+      "rejectReasonDetails presented as an array" in {
+        val result = jumioRejectReason.arrayDetails(jumioRejection).parseJson.convertTo[JumioRejectReason]
+        result.details shouldBe Seq(jumioRejection)
+      }
+      "rejectReasonDetails presented as an empty array" in {
+        val result = jumioRejectReason.emptyArrayDetails().parseJson.convertTo[JumioRejectReason]
+        result.details shouldBe Seq.empty
+      }
+      "rejectReasonDetails presented as a single object" in {
+        val result = jumioRejectReason.objectDetails(jumioRejection).parseJson.convertTo[JumioRejectReason]
+        result.details shouldBe Seq(jumioRejection)
+      }
+      "rejectReasonDetails isn't presented" in {
+        val result = jumioRejectReason.detailsNotPresented().parseJson.convertTo[JumioRejectReason]
+        result.details shouldBe Seq.empty
+      }
+    }
+  }
+
+
+  val jumioRejection = JumioRejection("__code__", "__description__")
+
+  object jumioRejectReason {
+    def arrayDetails(rejection: JumioRejection) = body(s""","rejectReasonDetails":[${rejection.toJson.prettyPrint}]""")
+
+    def emptyArrayDetails() = body(s""","rejectReasonDetails":[]""")
+
+    def objectDetails(rejection: JumioRejection) = body(s""","rejectReasonDetails":${rejection.toJson.prettyPrint}""")
+
+    def detailsNotPresented() = body("")
+
+    private def body(details: String) =
+      s"""{
+         |"rejectReasonCode":"__reject_reason_code__",
+         |"rejectReasonDescription":"__reject_reason_description__"
+         |$details
+         |}""".stripMargin
   }
 
   val jumioImage =

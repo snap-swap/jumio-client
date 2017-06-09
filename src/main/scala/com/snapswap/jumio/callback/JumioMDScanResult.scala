@@ -90,7 +90,7 @@ object JumioMDScanResult {
       case Some(JumioTx(status, source, _, _, _, _, Some(merchantScanReference), _)) if status == EnumJumioTxStatuses.done =>
         parseDocument(parameters) match {
           case Some(JumioDocument(docType, _, _, _, _, _, _, _, _, _, extractedData, Some(docStatus)))
-            if docStatus == EnumJumioMDDocumentStatus.EXTRACTED || docStatus == EnumJumioMDDocumentStatus.UPLOADED =>
+            if docStatus == EnumJumioDocumentStatus.EXTRACTED || docStatus == EnumJumioDocumentStatus.UPLOADED =>
             JumioMDScanSuccess(
               docType = docType.getOrElse(throw new RuntimeException(s"document type must be in provided")),
               merchantScanReference = merchantScanReference,
@@ -106,7 +106,7 @@ object JumioMDScanResult {
               address = extractedData.flatMap(_.address)
             )
           case Some(JumioDocument(_, _, _, _, _, _, _, _, _, _, _, Some(docStatus)))
-            if docStatus == EnumJumioMDDocumentStatus.DISCARDED =>
+            if docStatus == EnumJumioDocumentStatus.DISCARDED =>
             JumioMDScanFailure(
               merchantScanReference = merchantScanReference,
               scanReference = parseScanReference(parameters),

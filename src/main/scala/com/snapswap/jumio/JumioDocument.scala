@@ -41,12 +41,25 @@ object EnumJumioDocTypes extends Enumeration {
   val custom = Value("CUSTOM") //  Custom document type
 }
 
-object EnumJumioMDDocumentStatus extends Enumeration {
-  type JumioMDDocumentStatus = Value
+object EnumJumioDocumentStatus extends Enumeration {
+  type JumioDocumentStatus = Value
 
+  //from md callback
   val UPLOADED = Value("UPLOADED")
   val EXTRACTED = Value("EXTRACTED")
   val DISCARDED = Value("DISCARDED")
+
+  //from retrieval api
+  val NO_ID_UPLOADED = Value("NO_ID_UPLOADED")
+  val DOCUMENT_PRESENT = Value("DOCUMENT_PRESENT")
+  val NO_DOCUMENT_PRESENT = Value("NO_DOCUMENT_PRESENT")
+  val DENIED_UNSUPPORTED_DOCUMENT_TYPE = Value("DENIED_UNSUPPORTED_DOCUMENT_TYPE")
+  val APPROVED_VERIFIED = Value("APPROVED_VERIFIED")
+  val DENIED_FRAUD = Value("DENIED_FRAUD")
+  val DENIED_UNSUPPORTED_ID_TYPE = Value("DENIED_UNSUPPORTED_ID_TYPE")
+  val DENIED_UNSUPPORTED_ID_COUNTRY = Value("DENIED_UNSUPPORTED_ID_COUNTRY")
+  val DENIED_NAME_MISMATCH = Value("DENIED_NAME_MISMATCH")
+  val ERROR_NOT_READABLE_ID = Value("ERROR_NOT_READABLE_ID")
 }
 
 case class JumioExtractedData(firstName: Option[String],
@@ -69,7 +82,7 @@ case class JumioDocument(`type`: Option[EnumJumioDocTypes.JumioDocType],
                          personalNumber: Option[String],
                          address: Option[JumioAddress],
                          extractedData: Option[JumioExtractedData],
-                         status: Option[EnumJumioMDDocumentStatus.JumioMDDocumentStatus]) {
+                         status: Option[EnumJumioDocumentStatus.JumioDocumentStatus]) {
   override def toString: String = `type` match {
     case None => "N/A"
     case Some(t) => (issuingCountry.map(v => s"$v ") :: Some(t.toString) ::
@@ -115,7 +128,7 @@ object JumioDocument {
     )
 
     def status = parameters.get("status").map(s =>
-      com.snapswap.jumio.unmarshaller.enumJumioMDDocumentStatusFormat.read(s.parseJson)
+      com.snapswap.jumio.unmarshaller.enumJumioDocumentStatusFormat.read(s.parseJson)
     )
 
     JumioDocument(

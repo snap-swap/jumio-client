@@ -42,7 +42,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
   implicit val enumJumioSourceFormat = enumNameFormat(EnumJumioSources)
   implicit val enumMRZCheckFormat = enumNameFormat(EnumJumioMRZCheck)
   implicit val enumJumioDocTypeFormat = enumNameFormat(EnumJumioDocTypes)
-  implicit val enumJumioMDDocumentStatusFormat = enumNameFormat(EnumJumioMDDocumentStatus)
+  implicit val enumJumioDocumentStatusFormat = enumNameFormat(EnumJumioDocumentStatus)
   implicit val enumJumioImageMaskHintFormat = enumNameFormat(EnumJumioImageMaskHint)
 
   implicit val jumioScanStatusFormat = jsonFormat3(JumioScanStatus)
@@ -50,10 +50,39 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
   implicit val jumioTxFormat = jsonFormat8(JumioTx)
 
   implicit val jumioRejectionFormat = jsonFormat(JumioRejection, "detailsCode", "detailsDescription")
-  implicit val jumioRejectReasonFormat = jsonFormat(JumioRejectReason,
-    "rejectReasonCode", "rejectReasonDescription", "rejectReasonDetails"
-  )
+
+  implicit val jumioRejectReasonFormat = new RootJsonFormat[JumioRejectReason] {
+    override def read(json: JsValue): JumioRejectReason = {
+      val f = json.asJsObject.fields
+
+      val code =
+        f.get("rejectReasonCode")
+          .map(_.convertTo[String])
+          .getOrElse(throw JumioMalformedResponse(json.prettyPrint))
+
+      val description =
+        f.get("rejectReasonDescription")
+          .map(_.convertTo[String])
+          .getOrElse(throw JumioMalformedResponse(json.prettyPrint))
+
+      val details = f.get("rejectReasonDetails") match {
+        case Some(JsArray(d)) =>
+          d.map(_.convertTo[JumioRejection])
+        case Some(d) =>
+          Seq(d.convertTo[JumioRejection])
+        case None =>
+          Seq.empty
+      }
+
+      JumioRejectReason(code = code, description = description, details = details)
+    }
+
+    override def write(obj: JumioRejectReason): JsValue =
+      SerializationImpossible(obj)
+  }
+
   implicit val jumioVerificationFormat = jsonFormat(JumioVerification, "mrzCheck", "faceMatch", "rejectReason")
+
   implicit val jumioNetverifyInitParamsFormat = jsonFormat(JumioNetverifyInitParams,
     "merchantIdScanReference", "successUrl", "errorUrl", "callbackUrl", "customerId"
   )
@@ -162,32 +191,30 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
 
   implicit val jumioImageFormat = new RootJsonFormat[JumioImage] {
     override def read(json: JsValue): JumioImage = {
+
       val f = json.asJsObject.fields
-      val (href, maskhint, classifier) = (
-        f("href").convertTo[String],
-        f.get("maskhint").map(_.convertTo[EnumJumioImageMaskHint.ImageMaskHint]),
-        f("classifier") match {
-          case JsNumber(c) =>
-            c.toInt.toString
-          case JsString(s) =>
-            s
-          case _ =>
-            throw JumioMalformedResponse(s"can't deserialize ${json.prettyPrint} to JumioImage")
-        }
-      )
+
+      val href =
+        f.get("href")
+          .map(_.convertTo[String])
+          .getOrElse(throw JumioMalformedResponse(json.prettyPrint))
+
+      val maskhint = f.get("maskhint").map(_.convertTo[EnumJumioImageMaskHint.ImageMaskHint])
+
+      val classifier = f("classifier") match {
+        case JsNumber(c) =>
+          c.toInt.toString
+        case JsString(s) =>
+          s
+        case _ =>
+          throw JumioMalformedResponse(json.prettyPrint)
+      }
 
       JumioImage(classifier = classifier, href = href, maskhint = maskhint)
     }
 
-    override def write(obj: JumioImage): JsValue = {
-      val fields = Map("classifier" -> obj.classifier.toJson, "href" -> obj.href.toJson)
-      obj.maskhint
-        .map { m =>
-          fields + ("maskhint" -> m.toJson)
-        }
-        .getOrElse(fields)
-        .toJson
-    }
+    override def write(obj: JumioImage): JsValue =
+      SerializationImpossible(obj)
   }
 
   implicit val jumioImagesInfoFormat = jsonFormat(JumioImagesInfo,

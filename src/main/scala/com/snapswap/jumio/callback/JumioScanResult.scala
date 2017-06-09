@@ -176,7 +176,7 @@ object JumioScanResult {
       import com.snapswap.jumio.unmarshaller._
 
       parameters.get("rejectReason").map(_.parseJson.convertTo[JumioRejectReason])
-        .getOrElse(JumioRejectReason("UNKNOWN", "UNKNOWN", Seq()))
+        .getOrElse(JumioRejectReason("UNKNOWN", "UNKNOWN", Seq.empty))
     }
 
     parameters.getOrElse("idScanStatus", "ERROR") match {
