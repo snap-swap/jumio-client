@@ -188,7 +188,7 @@ class AkkaHttpJumioClient(clientToken: String, clientSecret: String,
   }
 
   override def scanMdDetails(scanReference: String): Future[JumioScan] = {
-    get(s"/documents/$scanReference", retrievalMdFlow) { response =>
+    get(s"/documents/$scanReference/data", retrievalMdFlow) { response =>
       response.convertTo[JumioScan]
     }
   }
