@@ -81,7 +81,21 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
       SerializationImpossible(obj)
   }
 
-  implicit val jumioVerificationFormat = jsonFormat(JumioVerification, "mrzCheck", "faceMatch", "rejectReason")
+  implicit val jumioVerificationFormat = new RootJsonFormat[JumioVerification] {
+    override def read(json: JsValue): JumioVerification = json match {
+      case obj: JsObject =>
+        val fields = obj.fields
+
+        JumioVerification(
+          fields.get("mrzCheck").map(_.convertTo[EnumJumioMRZCheck.JumioMRZCheck]),
+          fields.get("faceMatch").map(_.convertTo[String].toInt),
+          fields.get("rejectReason").map(_.convertTo[JumioRejectReason])
+        )
+      case x => deserializationError("Expected JumioVerification as object, but got " + x)
+    }
+
+    override def write(obj: JumioVerification): JsValue = ???
+  }
 
   implicit val jumioNetverifyInitParamsFormat = jsonFormat(JumioNetverifyInitParams,
     "merchantIdScanReference", "successUrl", "errorUrl", "callbackUrl", "customerId"
