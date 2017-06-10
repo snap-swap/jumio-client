@@ -69,13 +69,16 @@ case class JumioScan(timestamp: DateTime,
 }
 
 case class JumioTx(status: EnumJumioTxStatuses.JumioTxStatus,
-                   source: EnumJumioSources.JumioSource,
+                   optSource: Option[EnumJumioSources.JumioSource],
                    date: DateTime,
                    clientIp: Option[String],
                    customerId: Option[String],
                    additionalInformation: Option[String],
                    merchantScanReference: Option[String],
                    merchantReportingCriteria: Option[String]) {
+
+  val source: EnumJumioSources.JumioSource = optSource.getOrElse(EnumJumioSources.unknown)
+
   override def toString: String =
     (
       Some(s"$status, received at $date from $source") ::

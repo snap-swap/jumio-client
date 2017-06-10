@@ -47,7 +47,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
 
   implicit val jumioScanStatusFormat = jsonFormat3(JumioScanStatus)
 
-  implicit val jumioTxFormat = jsonFormat8(JumioTx)
+  implicit val jumioTxFormat = jsonFormat(JumioTx, "status", "source", "date", "clientIp", "customerId", "additionalInformation", "merchantScanReference", "merchantReportingCriteria")
 
   implicit val jumioRejectionFormat = jsonFormat(JumioRejection, "detailsCode", "detailsDescription")
 

@@ -95,7 +95,7 @@ object JumioMDScanResult {
               docType = docType.getOrElse(throw new RuntimeException(s"document type must be in provided")),
               merchantScanReference = merchantScanReference,
               scanReference = parseScanReference(parameters),
-              source = source,
+              source = source.getOrElse(EnumJumioSources.unknown),
               firstName = extractedData.flatMap(_.firstName),
               lastName = extractedData.flatMap(_.lastName),
               name = extractedData.flatMap(_.name),
@@ -110,7 +110,7 @@ object JumioMDScanResult {
             JumioMDScanFailure(
               merchantScanReference = merchantScanReference,
               scanReference = parseScanReference(parameters),
-              source = source,
+              source = source.getOrElse(EnumJumioSources.unknown),
               error = docStatus.toString,
               s"Expected transaction status is 'EXTRACTED' or 'UPLOADED' but found 'DISCARDED'"
             )
@@ -118,7 +118,7 @@ object JumioMDScanResult {
             JumioMDScanFailure(
               merchantScanReference = merchantScanReference,
               scanReference = parseScanReference(parameters),
-              source = source,
+              source = source.getOrElse(EnumJumioSources.unknown),
               error = "Unknown callback format",
               s"Unknown callback format: '$other'"
             )
@@ -127,7 +127,7 @@ object JumioMDScanResult {
         JumioMDScanFailure(
           merchantScanReference = merchantScanReference,
           scanReference = parseScanReference(parameters),
-          source = source,
+          source = source.getOrElse(EnumJumioSources.unknown),
           error = status.toString,
           s"Expected transaction status is 'done' but found '$status'"
         )
@@ -135,7 +135,7 @@ object JumioMDScanResult {
         JumioMDScanFailure(
           merchantScanReference = "N/A",
           scanReference = parseScanReference(parameters),
-          source = source,
+          source = source.getOrElse(EnumJumioSources.unknown),
           error = "merchantScanReference must be presented",
           s"merchantScanReference must be presented"
         )
