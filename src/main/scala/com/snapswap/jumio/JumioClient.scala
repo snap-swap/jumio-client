@@ -13,15 +13,12 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import akka.util.ByteString
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 trait JumioClient {
-  type RawImage = Source[ByteString, Any]
-
   def scanStatus(scanReference: String): Future[JumioScanStatus]
 
   def scanDetails(scanReference: String): Future[JumioScan]
@@ -82,7 +79,6 @@ class AkkaHttpJumioClient(clientToken: String, clientSecret: String,
     Authorization(BasicHttpCredentials(clientToken, clientSecret))
   )
 
-
   private def send[T](request: HttpRequest, connection: Connection)(transform: ResponseEntity => Future[T]): Future[T] =
     Source.single(request -> UUID.randomUUID()).via(connection).runWith(Sink.head)
       .recoverWith {
@@ -121,9 +117,14 @@ class AkkaHttpJumioClient(clientToken: String, clientSecret: String,
       }
     }
 
-  private def requestForImage(request: HttpRequest, connection: Connection): Future[Source[ByteString, Any]] =
+  private def requestForImage(request: HttpRequest, connection: Connection): Future[RawImage] =
     send(request.withHeaders(authHeaders), connection) { r =>
-      Future.successful(r.withContentType(MediaTypes.`image/jpeg`).dataBytes)
+      Future.successful {
+        RawImage(
+          r.dataBytes,
+          r.contentType
+        )
+      }
     }
 
 
@@ -148,7 +149,6 @@ class AkkaHttpJumioClient(clientToken: String, clientSecret: String,
     requestForJson(request, connection)(parser)
   }
 
-
   override def initNetverify(merchantScanReference: String,
                              redirectUrl: String,
                              callbackUrl: String,
@@ -172,7 +172,6 @@ class AkkaHttpJumioClient(clientToken: String, clientSecret: String,
       response.convertTo[JumioMdNetverifyInitResponse]
     }
   }
-
 
   override def scanStatus(scanReference: String): Future[JumioScanStatus] = {
     get(s"/scans/$scanReference", flow) { response =>
@@ -203,68 +202,3 @@ class AkkaHttpJumioClient(clientToken: String, clientSecret: String,
     requestForImage(Get(href), retrievalMdFlow)
 
 }
-
-
-//object RetrieveImageUsageExample extends App {
-//
-//  import java.nio.file.Paths
-//
-//  import akka.stream.scaladsl.FileIO
-//  import akka.stream.{ActorMaterializer, IOResult}
-//
-//
-//  implicit val system = ActorSystem("test")
-//  implicit val materializer = ActorMaterializer()
-//  implicit val context = ExecutionContext.global
-//  val log = Logging(system, this.getClass)
-//
-//  //use retrieval api credentials here
-//  val client = new AkkaHttpJumioClient(
-//    clientToken = "",
-//    clientSecret = "",
-//    clientCompanyName = "snapswap",
-//    clientApplicationName = "remote-kyc",
-//    clientVersion = "v1",
-//    apiHost = "netverify.com"
-//  )
-//
-//
-//  def fileWriter(bss: JumioClient#RawImage, path: String): Future[IOResult] =
-//    bss.runWith(FileIO.toPath(Paths.get(path)))
-//
-//  def saveImagesForJumioScan(scanReference: String, dir: String)
-//                            (getImageInfoMethod: String => Future[JumioImagesInfo],
-//                             obtainImageMethod: String => Future[JumioClient#RawImage]): Future[Unit] = (for {
-//    scan <- getImageInfoMethod(scanReference)
-//    doneImages = scan.images.map { case JumioImage(classifier, href, _) =>
-//      obtainImageMethod(href).flatMap { response =>
-//        val fileName = s"$dir$scanReference.$classifier.jpg"
-//        fileWriter(response, fileName).map { ioResult =>
-//          (fileName, ioResult)
-//        }
-//      }
-//    }
-//    result <- Future.sequence(doneImages)
-//  } yield result.foreach {
-//    case (f, r) if r.wasSuccessful =>
-//      log.info(s"scan image for scanReference $scanReference was saved successfully as $f")
-//    case _ =>
-//      log.error(s"!!! ATTENTION !!! there are some problems during saving scan for scanReference $scanReference")
-//  }).recover {
-//    case ex =>
-//      Future.successful(log.error(s"${ex.getClass.getSimpleName}: ${ex.getMessage}"))
-//  }
-//
-//
-//  val scanReference = "b4aa577c-c46f-42fd-9c2e-e68bb44d49d4"
-//  val mdScanReference = "061e452d-311a-47cb-b4b4-c4af3a03b6ed"
-//
-//  val getFiles = saveImagesForJumioScan(scanReference, "")(client.scanImages, client.obtainImage)
-//  val getMdFiles = saveImagesForJumioScan(mdScanReference, "")(client.mdScanImages, client.obtainMdImage)
-//
-//  for {
-//    _ <- getFiles
-//    _ <- getMdFiles
-//    _ <- system.terminate()
-//  } yield ()
-//}

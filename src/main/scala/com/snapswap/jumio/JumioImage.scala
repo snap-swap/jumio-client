@@ -1,5 +1,9 @@
 package com.snapswap.jumio
 
+import akka.http.scaladsl.model.ContentType
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+
 /**
   * maskhint parameter is used for credit cards only, see jumio retrieval api doc for more details
   **/
@@ -16,3 +20,6 @@ object EnumJumioImageMaskHint extends Enumeration {
 
   val masked, unmasked = Value
 }
+
+case class RawImage(data: Source[ByteString, Any],
+                    contentType: ContentType)
