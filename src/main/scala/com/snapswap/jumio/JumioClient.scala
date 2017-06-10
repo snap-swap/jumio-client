@@ -23,6 +23,8 @@ trait JumioClient {
 
   def scanDetails(scanReference: String): Future[JumioScan]
 
+  def scanMdDetails(scanReference: String): Future[JumioScan]
+
   def initNetverify(merchantScanReference: String,
                     redirectUrl: String,
                     callbackUrl: String,
@@ -181,6 +183,12 @@ class AkkaHttpJumioClient(clientToken: String, clientSecret: String,
 
   override def scanDetails(scanReference: String): Future[JumioScan] = {
     get(s"/scans/$scanReference/data", flow) { response =>
+      response.convertTo[JumioScan]
+    }
+  }
+
+  override def scanMdDetails(scanReference: String): Future[JumioScan] = {
+    get(s"/documents/$scanReference", retrievalMdFlow) { response =>
       response.convertTo[JumioScan]
     }
   }
