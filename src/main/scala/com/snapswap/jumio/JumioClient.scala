@@ -94,7 +94,7 @@ class AkkaHttpJumioClient(clientToken: String, clientSecret: String,
         log.error(ex, s"${request.method.value} ${request.uri} failed with ${ex.getMessage}")
         Future.failed(ex)
       case (Success(response), _) =>
-        log.debug(s"Response to ${request.method.value} ${request.uri} is ${response.status} 'responseEntity'")
+        log.debug(s"Response to ${request.method.value} ${request.uri} is ${response.status}")
         transform(response.entity)
     }
 
