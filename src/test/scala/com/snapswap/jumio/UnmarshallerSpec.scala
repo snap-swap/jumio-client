@@ -13,7 +13,7 @@ class UnmarshallerSpec extends WordSpec with Matchers {
       val result = pendingScan.parseJson.convertTo[JumioScan]
       result.transaction.status shouldBe EnumJumioTxStatuses.pending
       result.transaction.source shouldBe EnumJumioSources.sdk
-      result.transaction.date shouldBe DateTime.now(DateTimeZone.UTC).withDate(2016, 1, 1).withTime(0, 0, 0, 0)
+      result.transaction.date shouldBe Some(DateTime.now(DateTimeZone.UTC).withDate(2016, 1, 1).withTime(0, 0, 0, 0))
     }
     "parse JumioImagesInfo" in {
       val result = jumioImagesInfo.parseJson.convertTo[JumioImagesInfo]

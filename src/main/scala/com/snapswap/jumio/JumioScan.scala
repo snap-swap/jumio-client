@@ -70,7 +70,7 @@ case class JumioScan(timestamp: DateTime,
 
 case class JumioTx(status: EnumJumioTxStatuses.JumioTxStatus,
                    optSource: Option[EnumJumioSources.JumioSource],
-                   date: DateTime,
+                   date: Option[DateTime],
                    clientIp: Option[String],
                    customerId: Option[String],
                    additionalInformation: Option[String],
