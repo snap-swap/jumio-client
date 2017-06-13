@@ -78,7 +78,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
     }
 
     override def write(obj: JumioRejectReason): JsValue =
-      SerializationImpossible(obj)
+      SerializationUnsupported(obj)
   }
 
   implicit val jumioVerificationFormat = new RootJsonFormat[JumioVerification] {
@@ -94,7 +94,8 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
       case x => deserializationError("Expected JumioVerification as object, but got " + x)
     }
 
-    override def write(obj: JumioVerification): JsValue = ???
+    override def write(obj: JumioVerification): JsValue =
+      SerializationUnsupported(obj)
   }
 
   implicit val jumioNetverifyInitParamsFormat = jsonFormat(JumioNetverifyInitParams,
@@ -169,7 +170,8 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
       case x => deserializationError("Expected address as object, but got " + x)
     }
 
-    override def write(obj: JumioAddress): JsValue = throw new UnsupportedOperationException("Conversion of JumioAddress to JSON isn't supported")
+    override def write(obj: JumioAddress): JsValue =
+      SerializationUnsupported(obj)
   }
 
   implicit val jumioExtractedDataReader = new RootJsonFormat[JumioExtractedData] {
@@ -190,7 +192,8 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
       case x => deserializationError("Expected address as object, but got " + x)
     }
 
-    override def write(obj: JumioExtractedData): JsValue = throw new UnsupportedOperationException("Conversion of JumioExtractedData to JSON isn't supported")
+    override def write(obj: JumioExtractedData): JsValue =
+      SerializationUnsupported(obj)
   }
 
   {
@@ -228,7 +231,7 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
     }
 
     override def write(obj: JumioImage): JsValue =
-      SerializationImpossible(obj)
+      SerializationUnsupported(obj)
   }
 
   implicit val jumioImagesInfoFormat = jsonFormat(JumioImagesInfo,

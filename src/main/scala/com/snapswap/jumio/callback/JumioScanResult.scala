@@ -3,6 +3,8 @@ package com.snapswap.jumio.callback
 import org.joda.time.DateTime
 import akka.http.scaladsl.model.Uri
 import com.snapswap.jumio._
+import spray.json._
+import com.snapswap.jumio.unmarshaller._
 
 case class JumioChecks(dataPositions: Boolean,
                        documentValidation: Boolean,
@@ -61,7 +63,7 @@ object JumioScanLinks {
     val idScanImageBackside = getUri("idScanImageBackside")
     val idScanImageFace = getUri("idScanImageFace")
 
-    JumioScanLinks(idScanImage, idScanImageBackside, idScanImageFace)
+    new JumioScanLinks(idScanImage, idScanImageBackside, idScanImageFace)
   }
 
   def of(str: String): JumioScanLinks = of(str.split(',').map(_.trim).flatMap { kv =>
@@ -172,9 +174,6 @@ object JumioScanResult {
     def additionalInformation = parameters.getOrUnknown("additionalInformation")
 
     def rejectReason = {
-      import spray.json._
-      import com.snapswap.jumio.unmarshaller._
-
       parameters.get("rejectReason").map(_.parseJson.convertTo[JumioRejectReason])
         .getOrElse(JumioRejectReason("UNKNOWN", "UNKNOWN", Seq.empty))
     }

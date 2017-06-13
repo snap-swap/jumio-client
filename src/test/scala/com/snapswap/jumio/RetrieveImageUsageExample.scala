@@ -2,6 +2,7 @@ package com.snapswap.jumio
 
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.http.scaladsl.model.MediaTypes
 
 import scala.concurrent.Future
 
@@ -19,8 +20,7 @@ object RetrieveImageUsageExample extends App {
 
   val log = Logging(system, this.getClass)
 
-  //use retrieval api credentials here
-  val client = new AkkaHttpJumioClient(
+  val client = new AkkaHttpRetrievalClient(
     clientToken = "",
     clientSecret = "",
     clientCompanyName = "snapswap",
@@ -30,8 +30,17 @@ object RetrieveImageUsageExample extends App {
   )
 
 
-  def fileWriter(bss: RawImage, path: String): Future[IOResult] =
-    bss.data.runWith(FileIO.toPath(Paths.get(path)))
+  def fileWriter(bss: RawImage, path: String): Future[IOResult] = {
+    val extension = bss.contentType.mediaType match {
+      case MediaTypes.`image/jpeg` =>
+        "jpg"
+      case MediaTypes.`image/png` =>
+        "png"
+      case _ =>
+        ""
+    }
+    bss.data.runWith(FileIO.toPath(Paths.get(s"$path.$extension")))
+  }
 
   def saveImagesForJumioScan(scanReference: String, dir: String)
                             (getImageInfoMethod: String => Future[JumioImagesInfo],
@@ -39,7 +48,7 @@ object RetrieveImageUsageExample extends App {
     scan <- getImageInfoMethod(scanReference)
     doneImages = scan.images.map { case JumioImage(classifier, href, _) =>
       obtainImageMethod(href).flatMap { response =>
-        val fileName = s"$dir$scanReference.$classifier.jpg"
+        val fileName = s"$dir$scanReference.$classifier"
         fileWriter(response, fileName).map { ioResult =>
           (fileName, ioResult)
         }
@@ -56,8 +65,8 @@ object RetrieveImageUsageExample extends App {
       Future.successful(log.error(s"${ex.getClass.getSimpleName}: ${ex.getMessage}"))
   }
 
-  val scanReference = "b4aa577c-c46f-42fd-9c2e-e68bb44d49d4"
-  val mdScanReference = "061e452d-311a-47cb-b4b4-c4af3a03b6ed"
+  val scanReference = "5577a6aa-11d5-4d3f-82f9-82df075e191d"
+  val mdScanReference = "939f45cb-30e4-4028-80c1-48a02d6078a4"
 
   val getFiles = saveImagesForJumioScan(scanReference, "")(client.scanImages, client.obtainImage)
   val getMdFiles = saveImagesForJumioScan(mdScanReference, "")(client.mdScanImages, client.obtainMdImage)

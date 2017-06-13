@@ -22,11 +22,7 @@ case class JumioMalformedResponse(responseEntity: String, override val cause: Op
   override val details = s"Jumio response is malformed: $responseEntity"
 }
 
-case class JumioSerializationUnavailable[T](entity: T, override val cause: Option[Throwable] = None) extends JumioError {
-  override val details = s"Entity ${entity.getClass.getSimpleName} isn't intended for serialization"
-}
-
-object SerializationImpossible {
+object SerializationUnsupported {
   def apply[T](entity: T): JsValue =
-    throw JumioSerializationUnavailable[T](entity)
+    throw new UnsupportedOperationException(s"Conversion of ${entity.getClass.getSimpleName} to JSON isn't supported")
 }

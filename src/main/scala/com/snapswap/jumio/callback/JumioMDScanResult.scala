@@ -3,7 +3,8 @@ package com.snapswap.jumio.callback
 import com.snapswap.jumio._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
-
+import com.snapswap.jumio.unmarshaller._
+import spray.json._
 
 trait JumioMDScanResult extends JumioNetverifyResult {
 
@@ -149,18 +150,12 @@ object JumioMDScanResult {
   }
 
   private def parseDocument(parameters: Map[String, String]): Option[JumioDocument] = {
-    import com.snapswap.jumio.unmarshaller._
-    import spray.json._
-
     parameters
       .get("document")
       .map(_.parseJson.convertTo[JumioDocument])
   }
 
   private def parseJumioTx(parameters: Map[String, String]): Option[JumioTx] = {
-    import com.snapswap.jumio.unmarshaller._
-    import spray.json._
-
     parameters
       .get("transaction")
       .map(_.parseJson.convertTo[JumioTx])
