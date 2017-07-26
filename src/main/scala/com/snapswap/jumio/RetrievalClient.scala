@@ -86,7 +86,7 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
       val url = baseURL + path + parameters(query)
       requestForJson(Get(url), if (isMd) mdFlow else flow)(parser)
     } else {
-      val domain = if (isMd) s"upload.$apiHost" else apiHost
+      val domain = if (isMd) s"retrieval.$apiHost" else apiHost
       val url = s"https://$domain$baseURL$path${parameters(query)}"
 
       requestForJson(Get(url), http)(parser)
