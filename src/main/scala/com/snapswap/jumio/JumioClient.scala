@@ -33,14 +33,13 @@ trait JumioClient {
 
   def log: LoggingAdapter
 
-  def useConnectionPool: Boolean
+  def useSingleConnectionPool: Boolean
 
   implicit def system: ActorSystem
 
   implicit def ctx: ExecutionContext
 
   implicit def materializer: Materializer
-
 
   implicit def headers(h: Seq[HttpHeader]): collection.immutable.Seq[HttpHeader] =
     collection.immutable.Seq(h).flatten
@@ -60,15 +59,11 @@ trait JumioClient {
         case ex =>
           Future.failed(JumioConnectionError(s"${request.method.value} ${request.uri} failed: ${ex.getMessage}", Some(ex)))
       }.flatMap {
-      case (Success(response), _) if response.status == StatusCodes.NotFound =>
-        log.debug(s"Response to ${request.method.value} ${request.uri} is ${response.status}")
-        Future.failed(JumioEntityNotFoundError)
+      case (Success(response), _) =>
+        processResponse(request, response, transform)
       case (Failure(ex), _) =>
         log.error(ex, s"${request.method.value} ${request.uri} failed with ${ex.getMessage}")
         Future.failed(ex)
-      case (Success(response), _) =>
-        log.debug(s"Response to ${request.method.value} ${request.uri} is ${response.status}")
-        transform(response.entity)
     }
 
 
@@ -94,13 +89,17 @@ trait JumioClient {
       .recover {
         case NonFatal(ex) =>
           throw JumioConnectionError(s"${request.method.value} ${request.uri} failed: ${ex.getMessage}", Some(ex))
-      }.flatMap {
-      case response if response.status == StatusCodes.NotFound =>
-        log.debug(s"Response to ${request.method.value} ${request.uri} is ${response.status}")
-        Future.failed(JumioEntityNotFoundError)
-      case response =>
-        log.debug(s"Response to ${request.method.value} ${request.uri} is ${response.status}")
-        transform(response.entity)
+      }.flatMap(processResponse(request, _, transform))
+  }
+
+  private def processResponse[T](request: HttpRequest, response: HttpResponse, transform: ResponseEntity => Future[T]): Future[T] = {
+    if (response.status == StatusCodes.NotFound) {
+      response.discardEntityBytes()
+      log.debug(s"Response to ${request.method.value} ${request.uri} is ${response.status}")
+      Future.failed(JumioEntityNotFoundError)
+    } else {
+      log.debug(s"Response to ${request.method.value} ${request.uri} is ${response.status}")
+      transform(response.entity)
     }
   }
 

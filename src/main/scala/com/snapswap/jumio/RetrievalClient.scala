@@ -37,7 +37,7 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
                               override val clientCompanyName: String,
                               override val clientApplicationName: String,
                               override val clientVersion: String,
-                              override val useConnectionPool: Boolean,
+                              override val useSingleConnectionPool: Boolean,
                               apiHost: String = "lon.netverify.com",
                               maxRetries: Int = 10)
                              (implicit val system: ActorSystem,
@@ -56,7 +56,7 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
     settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)).log("jumio multi document retrieval")
 
   private def requestForImage(request: HttpRequest, isMd: Boolean): Future[RawImage] = {
-    if (useConnectionPool) {
+    if (useSingleConnectionPool) {
       send(request.withHeaders(authHeaders), if (isMd) mdFlow else flow)(parseRawImage)
     } else {
       send(request.withHeaders(authHeaders), http)(parseRawImage)
@@ -82,7 +82,7 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
 
   private def get[T](path: String, isMd: Boolean, query: Map[String, String] = Map())
                     (parser: JsValue => T): Future[T] = {
-    if (useConnectionPool) {
+    if (useSingleConnectionPool) {
       val url = baseURL + path + parameters(query)
       requestForJson(Get(url), if (isMd) mdFlow else flow)(parser)
     } else {
