@@ -91,7 +91,7 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
     val params = JumioMdNetverifyInitParams(
       merchantScanReference, redirectUrl, redirectUrl, callbackUrl, customerId, country, docType
     )
-    post("/acquisitions", params.toJson, isMd = false) { response =>
+    post("/acquisitions", params.toJson, isMd = true) { response =>
       response.convertTo[JumioMdNetverifyInitResponse]
     }
   }
