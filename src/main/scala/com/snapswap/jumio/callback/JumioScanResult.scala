@@ -74,7 +74,7 @@ object JumioScanLinks {
   }.toMap)
 }
 
-trait JumioScanResult extends JumioNetverifyResult{
+trait JumioScanResult extends JumioNetverifyResult {
   override def scanReference: String
 
   def status: EnumJumioVerificationStatuses.JumioVerificationStatus
@@ -96,6 +96,44 @@ trait JumioScanResult extends JumioNetverifyResult{
   def links: JumioScanLinks
 }
 
+object EnumJumioSimilarity extends Enumeration {
+  type JumioSimilarity = Value
+
+  val MATCH = Value("MATCH")
+  val NO_MATCH = Value("NO_MATCH")
+  val NOT_POSSIBLE = Value("NOT_POSSIBLE")
+}
+
+object EnumJumioIdVerificationFailureReasons extends Enumeration {
+  type JumioIdVerificationFailureReasons = Value
+
+  val SELFIE_CROPPED_FROM_ID = Value("SELFIE_CROPPED_FROM_ID")
+  val ENTIRE_ID_USED_AS_SELFIE = Value("ENTIRE_ID_USED_AS_SELFIE")
+  val MULTIPLE_PEOPLE = Value("MULTIPLE_PEOPLE")
+  val SELFIE_IS_SCREEN_PAPER_VIDEO = Value("SELFIE_IS_SCREEN_PAPER_VIDEO")
+  val SELFIE_MANIPULATED = Value("SELFIE_MANIPULATED")
+  val AGE_DIFFERENCE_TOO_BIG = Value("AGE_DIFFERENCE_TOO_BIG")
+  val NO_FACE_PRESENT = Value("NO_FACE_PRESENT")
+  val FACE_NOT_FULLY_VISIBLE = Value("FACE_NOT_FULLY_VISIBLE")
+  val BAD_QUALITY = Value("BAD_QUALITY")
+}
+
+object IdentityVerification {
+  def of(parameters: Map[String, String]): Option[IdentityVerification] = {
+    parameters.get("identityVerification").map(_.parseJson.convertTo[IdentityVerification])
+  }
+}
+
+case class IdentityVerification(similarity: EnumJumioSimilarity.JumioSimilarity,
+                                validity: Boolean,
+                                reason: Option[EnumJumioIdVerificationFailureReasons.JumioIdVerificationFailureReasons]) {
+  override def toString = {
+    s"similarity is $similarity, look like " +
+      s"${if (validity) "valid" else "invalid"}" +
+      s"${reason.map(r => s" because $r").getOrElse("")}"
+  }
+}
+
 case class JumioScanSuccess(scanReference: String,
                             status: EnumJumioVerificationStatuses.JumioVerificationStatus,
                             source: EnumJumioSources.JumioSource,
@@ -103,21 +141,20 @@ case class JumioScanSuccess(scanReference: String,
                             timestamp: Option[DateTime],
                             callbackTimestamp: Option[DateTime],
                             document: JumioDocument,
-                            faceMatch: Option[Int],
-                            faceLiveness: Option[Boolean],
                             merchantScanReference: String,
                             customerId: Option[String],
                             clientIp: Option[String],
                             additionalInformation: String,
-                            links: JumioScanLinks) extends JumioScanResult {
+                            links: JumioScanLinks,
+                            identityVerification: Option[IdentityVerification]) extends JumioScanResult {
   override def toString: String = {
     import RichToString._
 
-    def faceDescr = faceMatch.map(p => p + "% faceMatch (looks " + (if (faceLiveness.getOrElse(false)) "alive" else "dead") + ")").getOrElse("faceMatch not performed")
-
     s"$status $scanReference (merchantScanID=$merchantScanReference, customerID=${customerId.orUnknown}) " +
       s"from $source at IP ${clientIp.orUnknown}, scanned at ${timestamp.orUnknown}, completed at ${callbackTimestamp.orUnknown}, " +
-      s"$checks, $faceDescr, URLs [$links]: $document"
+      s"$checks, " +
+      s"identity verification ${identityVerification.orUnknown}" +
+      s", URLs [$links]: $document"
   }
 }
 
@@ -179,15 +216,35 @@ object JumioScanResult {
     }
 
     parameters.getOrElse("idScanStatus", "ERROR") match {
-      case "SUCCESS" => JumioScanSuccess(scanReference, status, source, checks,
-        timestamp, callbackTimestamp,
+      case "SUCCESS" => JumioScanSuccess(
+        scanReference,
+        status,
+        source,
+        checks,
+        timestamp,
+        callbackTimestamp,
         JumioDocument.of(parameters),
-        idFaceMatch, idFaceLiveness,
-        merchantIdScanReference, customerId, clientIp,
-        additionalInformation, JumioScanLinks.of(parameters)
+        merchantIdScanReference,
+        customerId,
+        clientIp,
+        additionalInformation,
+        JumioScanLinks.of(parameters),
+        IdentityVerification.of(parameters)
       )
-      case "ERROR" => JumioScanFailure(scanReference, status, source, checks, timestamp, callbackTimestamp, rejectReason,
-        merchantIdScanReference, customerId, clientIp, JumioScanLinks.of(parameters))
+      case "ERROR" =>
+        JumioScanFailure(
+          scanReference = scanReference,
+          status = status,
+          source = source,
+          checks = checks,
+          timestamp = timestamp,
+          callbackTimestamp = callbackTimestamp,
+          rejectReason = rejectReason,
+          merchantScanReference = merchantIdScanReference,
+          customerId = customerId,
+          clientIp = clientIp,
+          links = JumioScanLinks.of(parameters)
+        )
     }
   }
 }

@@ -1,5 +1,6 @@
 package com.snapswap.jumio
 
+import com.snapswap.jumio.callback.{EnumJumioIdVerificationFailureReasons, EnumJumioSimilarity, IdentityVerification}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import spray.json._
@@ -111,18 +112,34 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
     "scanReference", "clientRedirectUrl"
   )
 
+  implicit val enumJumioSimilarityFormat = enumNameFormat(EnumJumioSimilarity)
+
+  implicit val enumJumioIdVerificationFailureReasonsFormat = enumNameFormat(EnumJumioIdVerificationFailureReasons)
+
+  implicit val identityVerificationFormat = jsonFormat(IdentityVerification.apply, "similarity", "validity", "reason")
+
   protected trait Address {
     def toAddress: JumioAddress
   }
 
-  protected case class USAddress(city: String, stateCode: Option[String],
-                                 streetName: String, streetSuffix: Option[String], streetDirection: Option[String],
-                                 streetNumber: Option[String], unitDesignator: Option[String], unitNumber: Option[String],
-                                 zip: String, zipExtension: Option[String], country: String
+  protected case class USAddress(city: Option[String],
+                                 stateCode: Option[String],
+                                 streetName: Option[String],
+                                 streetSuffix: Option[String],
+                                 streetDirection: Option[String],
+                                 streetNumber: Option[String],
+                                 unitDesignator: Option[String],
+                                 unitNumber: Option[String],
+                                 zip: Option[String],
+                                 zipExtension: Option[String],
+                                 country: Option[String]
                                 ) extends Address {
-    def toAddress = JumioAddress(country = country, region = stateCode, city = city,
-      postalCode = zip + zipExtension.map(v => s"-$v").getOrElse(""),
-      streetAddress = (Some(streetName) ::
+    def toAddress = JumioAddress(
+      country = country.getOrElse(""),
+      region = stateCode,
+      city = city.getOrElse(""),
+      postalCode = zip.map(v => s" $v").getOrElse("") + zipExtension.map(v => s"-$v").getOrElse(""),
+      streetAddress = (streetName ::
         streetSuffix.map(v => s" $v") ::
         streetDirection.map(v => s" $v") ::
         streetNumber.map(v => s" $v") ::
@@ -133,10 +150,14 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
 
   protected implicit val usAddressFormat = jsonFormat11(USAddress)
 
-  protected case class EUAddress(city: String, province: Option[String], streetName: String,
+  protected case class EUAddress(city: Option[String], province: Option[String], streetName: Option[String],
                                  streetNumber: Option[String], unitDetails: Option[String],
-                                 postalCode: String, country: String) extends Address {
-    def toAddress = JumioAddress(country = country, region = province, city = city, postalCode = postalCode,
+                                 postalCode: Option[String], country: Option[String]) extends Address {
+    def toAddress = JumioAddress(
+      country = country.getOrElse(""),
+      region = province,
+      city = city.getOrElse(""),
+      postalCode = postalCode.getOrElse(""),
       streetAddress = (Some(streetName) ::
         streetNumber.map(v => s" $v") ::
         unitDetails.map(v => s", $v") ::
@@ -148,10 +169,12 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
 
   protected case class RawAddress(line1: String,
                                   line2: Option[String], line3: Option[String], line4: Option[String], line5: Option[String],
-                                  country: String, postalCode: String, city: String) extends Address {
-    def toAddress = JumioAddress(country = country,
+                                  country: Option[String], postalCode: Option[String], city: Option[String]) extends Address {
+    def toAddress = JumioAddress(
+      country = country.getOrElse(""),
       region = None,
-      city = city, postalCode = postalCode,
+      city = city.getOrElse(""),
+      postalCode = postalCode.getOrElse(""),
       streetAddress = (Some(line1) :: line2 :: line3 :: line4 :: line5 ::
         Nil).flatten.map(_.trim).mkString(" "),
       format = EnumJumioAddressFormats.raw)

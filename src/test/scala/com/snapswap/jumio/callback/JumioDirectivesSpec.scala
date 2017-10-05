@@ -20,9 +20,9 @@ class JumioDirectivesSpec extends WordSpec with Matchers with Directives with Sc
       responseAs[String] shouldEqual s"APPROVED_VERIFIED $scanRef (merchantScanID=xxxxxxxx, customerID=CUSTOMER) from SDK at IP 127.0.0.1, " +
         s"scanned at 2016-12-31T23:59:59.999Z, completed at 2017-12-31T23:59:59.999Z, " +
         s"checked [dataPositions=OK, documentValidation=OK, hologram=OK, mrzCode=OK, microprint=OK, securityFeatures=OK, signature=OK], " +
-        s"94% faceMatch (looks alive), " +
+        s"identity verification similarity is MATCH, look like valid, " +
         s"URLs [idScanImage=https://lon.netverify.com/protected-image/yyyyyyyy, idScanImageBackside=N/A, idScanImageFace=https://lon.netverify.com/protected-image/zzzzzzzz]: " +
-        s"FRA PASSPORT of 'JOHN' 'DOE', born '1976-12-31', '10CL12345' number, 'N/A' personal number, expiry at '2020-12-31'"
+        s"USA PASSPORT of 'FIRSTNAME' 'LASTNAME', born '1990-01-01' resident of ',  , USA', 'P1234' number, 'N/A' personal number, expiry at '2022-12-31'"
     }
 
     Post("/", deniedFraud(scanRef)) ~> route ~> check {
@@ -35,35 +35,36 @@ class JumioDirectivesSpec extends WordSpec with Matchers with Directives with Sc
   }
 
   private def approvedVerified(scanRef: UUID) = FormData(
-    "callBackType" -> "NETVERIFYID",
-    "jumioIdScanReference" -> scanRef.toString,
-    "verificationStatus" -> "APPROVED_VERIFIED",
-    "idScanStatus" -> "SUCCESS",
-    "idScanSource" -> "SDK",
-    "idCheckDataPositions" -> "OK",
-    "idCheckDocumentValidation" -> "OK",
-    "idCheckHologram" -> "OK",
-    "idCheckMRZcode" -> "OK",
-    "idCheckMicroprint" -> "OK",
-    "idCheckSecurityFeatures" -> "OK",
-    "idCheckSignature" -> "OK",
-    "transactionDate" -> "2016-12-31T23:59:59.999Z",
-    "callbackDate" -> "2017-12-31T23:59:59.999Z",
+    "idExpiry" -> "2022-12-31",
     "idType" -> "PASSPORT",
-    "idCountry" -> "FRA",
-    "idFaceMatch" -> "94",
-    "idScanImage" -> "https://lon.netverify.com/protected-image/yyyyyyyy",
-    "idScanImageFace" -> "https://lon.netverify.com/protected-image/zzzzzzzz",
-    "idNumber" -> "10CL12345",
-    "idFirstName" -> "JOHN",
-    "idLastName" -> "DOE",
-    "idDob" -> "1976-12-31",
-    "idExpiry" -> "2020-12-31",
+    "idDob" -> "1990-01-01",
+    "idCheckSignature" -> "OK",
+    "idCheckDataPositions" -> "OK",
+    "idCheckHologram" -> "OK",
+    "idCheckMicroprint" -> "OK",
+    "idCheckDocumentValidation" -> "OK",
+    "idCountry" -> "USA",
+    "idScanSource" -> "SDK",
+    "idFirstName" -> "FIRSTNAME",
+    "verificationStatus" -> "APPROVED_VERIFIED",
+    "jumioIdScanReference" -> scanRef.toString,
     "personalNumber" -> "N/A",
     "merchantIdScanReference" -> "xxxxxxxx",
-    "customerId" -> "CUSTOMER",
+    "idCheckSecurityFeatures" -> "OK",
+    "idCheckMRZcode" -> "OK",
+    "idScanImage" -> "https://lon.netverify.com/protected-image/yyyyyyyy",
+    "idScanImageFace" -> "https://lon.netverify.com/protected-image/zzzzzzzz",
+    "callBackType" -> "NETVERIFYID",
     "clientIp" -> "127.0.0.1",
-    "idFaceLiveness" -> "TRUE"
+    "idLastName" -> "LASTNAME",
+    "idAddress" -> """{"country":"USA", "stateCode":"US-OH"}""",
+    "idScanStatus" -> "SUCCESS",
+    "identityVerification" -> """{"similarity":"MATCH","validity":true}""",
+    "idNumber" -> "P1234",
+    "customerId" -> "CUSTOMER",
+    "transactionDate" -> "2016-12-31T23:59:59.999Z",
+    "callbackDate" -> "2017-12-31T23:59:59.999Z",
+    "idType" -> "PASSPORT"
   )
 
   private def deniedFraud(scanRef: UUID) = FormData(
