@@ -198,10 +198,6 @@ object JumioScanResult {
 
     def callbackTimestamp = parameters.getTimestamp("callbackDate")
 
-    def idFaceMatch = parameters.get("idFaceMatch").map(_.toInt)
-
-    def idFaceLiveness = parameters.get("idFaceLiveness").map(_.equalsIgnoreCase("true"))
-
     def merchantIdScanReference = parameters.getOrUnknown("merchantIdScanReference")
 
     def customerId = parameters.getString("customerId")

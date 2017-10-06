@@ -1,5 +1,6 @@
 package com.snapswap.jumio
 
+import com.snapswap.jumio.callback.IdentityVerification
 import org.joda.time.DateTime
 
 object EnumJumioTxStatuses extends Enumeration {
@@ -109,7 +110,4 @@ case class JumioRejectReason(code: String,
 }
 
 case class JumioVerification(mrzCheck: Option[EnumJumioMRZCheck.JumioMRZCheck],
-                             faceMatchPercentage: Option[Int],
-                             rejectReason: Option[JumioRejectReason]) {
-  def rejected: Boolean = rejectReason.isDefined
-}
+                             identityVerification: Option[IdentityVerification])
