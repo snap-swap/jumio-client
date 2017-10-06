@@ -110,4 +110,6 @@ case class JumioRejectReason(code: String,
 }
 
 case class JumioVerification(mrzCheck: Option[EnumJumioMRZCheck.JumioMRZCheck],
-                             identityVerification: Option[IdentityVerification])
+                             identityVerification: Option[IdentityVerification]) {
+  def rejected: Boolean = identityVerification.flatMap(_.reason).isDefined
+}
