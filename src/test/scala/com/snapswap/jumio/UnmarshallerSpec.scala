@@ -15,6 +15,11 @@ class UnmarshallerSpec extends WordSpec with Matchers {
       result.transaction.source shouldBe EnumJumioSources.sdk
       result.transaction.date shouldBe Some(DateTime.now(DateTimeZone.UTC).withDate(2016, 1, 1).withTime(0, 0, 0, 0))
     }
+    "parse details of success scan with identity verification " in {
+      val result = doneScanWithIdentityVerification.parseJson.convertTo[JumioScan]
+      result.transaction.status shouldBe EnumJumioTxStatuses.done
+      result.transaction.source shouldBe EnumJumioSources.sdk
+    }
     "parse JumioImagesInfo" in {
       val result = jumioImagesInfo.parseJson.convertTo[JumioImagesInfo]
       result.timestamp shouldBe "2017-06-08T05:41:22.294+0000"
@@ -140,5 +145,37 @@ class UnmarshallerSpec extends WordSpec with Matchers {
       |	"verification": {
       |		"mrzCheck": "OK"
       |	}
+      |}""".stripMargin
+
+  val doneScanWithIdentityVerification =
+    """{
+      |  "timestamp": "2017-11-08T08:33:29.031Z",
+      |  "document": {
+      |    "number": "730148999",
+      |    "dob": "1987-04-28",
+      |    "lastName": "MOROZOV",
+      |    "firstName": "VLADIMIR",
+      |    "status": "APPROVED_VERIFIED",
+      |    "issuingCountry": "RUS",
+      |    "issuingDate": "2000-02-19",
+      |    "type": "PASSPORT",
+      |    "expiry": "2003-02-19"
+      |  },
+      |  "verification": {
+      |    "faceMatch": "92",
+      |    "identityVerification": {
+      |      "similarity": "MATCH",
+      |      "validity": "true"
+      |    },
+      |    "mrzCheck": "OK"
+      |  },
+      |  "scanReference": "22eee721-c876-4a35-9900-9b6675f7de60",
+      |  "transaction": {
+      |    "clientIp": "2.93.239.137",
+      |    "source": "SDK",
+      |    "date": "2017-11-08T07:07:36.902Z",
+      |    "status": "DONE",
+      |    "merchantScanReference": "DF5AF751-7AAA-45B9-A62D-9B1D5271A59B"
+      |  }
       |}""".stripMargin
 }

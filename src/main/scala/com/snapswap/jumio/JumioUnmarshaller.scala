@@ -86,7 +86,30 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
 
   implicit val enumJumioIdVerificationFailureReasonsFormat = enumNameFormat(EnumJumioIdVerificationFailureReasons)
 
-  implicit val identityVerificationFormat = jsonFormat(IdentityVerification.apply, "similarity", "validity", "reason")
+  implicit val identityVerificationFormat = new RootJsonFormat[IdentityVerification] {
+    override def read(json: JsValue): IdentityVerification = json match {
+      case obj: JsObject =>
+        val fields = obj.fields
+
+        IdentityVerification(
+          fields.get("similarity").map(_.convertTo[EnumJumioSimilarity.JumioSimilarity]).get,
+          fields.get("validity").map {
+            case JsString(value) =>
+              value.toBoolean
+            case JsBoolean(value) =>
+              value
+            case other =>
+              deserializationError(s"Expected Boolean , but got $other")
+          }.get,
+          fields.get("reason").map(_.convertTo[EnumJumioIdVerificationFailureReasons.JumioIdVerificationFailureReasons])
+        )
+      case x => deserializationError("Expected JumioVerification as object, but got " + x)
+    }
+
+    override def write(obj: IdentityVerification): JsValue =
+      SerializationUnsupported(obj)
+  }
+    jsonFormat(IdentityVerification.apply, "similarity", "validity", "reason")
 
   implicit val jumioVerificationFormat = new RootJsonFormat[JumioVerification] {
     override def read(json: JsValue): JumioVerification = json match {
