@@ -1,8 +1,9 @@
 package com.snapswap.jumio
 
+import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, ZonedDateTime}
+
 import com.snapswap.jumio.callback.{EnumJumioIdVerificationFailureReasons, EnumJumioSimilarity, IdentityVerification}
-import org.joda.time.DateTime
-import org.joda.time.format.ISODateTimeFormat
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
@@ -18,25 +19,43 @@ trait JumioUnmarshaller extends DefaultJsonProtocol {
     def write(v: enum.Value) = JsString(v.toString)
   }
 
-  implicit val dateTimeFormat = new RootJsonFormat[DateTime] {
-    private val df = ISODateTimeFormat.date().withZoneUTC()
-    private val dtf = ISODateTimeFormat.dateTime().withZoneUTC()
+  implicit object DateJsonFormat extends RootJsonFormat[LocalDate] {
+    private val formatter = DateTimeFormatter.ISO_OFFSET_DATE
 
-    override def read(json: JsValue) = json match {
-      case JsString(str) if str.contains("T") =>
-        Try(dtf.parseDateTime(str)) match {
-          case Success(dt) => dt
-          case Failure(ex) => deserializationError(s"Expected DateTime as JsString in ISO 8601 'yyyy-MM-ddTHH:mm:ss.SSSZ' format, but got '$str'", cause = ex)
-        }
+    override def read(json: JsValue): LocalDate = json match {
       case JsString(str) =>
-        Try(df.parseDateTime(str)) match {
-          case Success(dt) => dt
-          case Failure(ex) => deserializationError(s"Expected Date as JsString in 'yyyy-MM-dd' format, but got '$str'", cause = ex)
+        Try(ZonedDateTime.parse(str, formatter)) match {
+          case Success(dt) =>
+            dt.toLocalDate
+          case Failure(ex) =>
+            deserializationError(s"Expected Date as JsString in '${formatter.toString}' format, but got '$str'", ex)
         }
-      case x => deserializationError("Expected DateTime as JsString, but got " + x)
+      case other =>
+        deserializationError(s"Expected DateTime as JsString, but got $other")
     }
 
-    override def write(obj: DateTime) = JsString(dtf.print(obj))
+    override def write(obj: LocalDate) =
+      JsString(obj.format(formatter))
+  }
+
+
+  implicit object DateTimeJsonFormat extends RootJsonFormat[ZonedDateTime] {
+    private val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+
+    override def read(json: JsValue): ZonedDateTime = json match {
+      case JsString(str) =>
+        Try(ZonedDateTime.parse(str, formatter)) match {
+          case Success(dt) =>
+            dt
+          case Failure(ex) =>
+            deserializationError(s"Expected Date as JsString in '${formatter.toString}' format, but got '$str'", ex)
+        }
+      case other =>
+        deserializationError(s"Expected DateTime as JsString, but got $other")
+    }
+
+    override def write(obj: ZonedDateTime) =
+      JsString(obj.format(formatter))
   }
 
   implicit val enumJumioTxStatusFormat = enumNameFormat(EnumJumioTxStatuses)

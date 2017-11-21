@@ -1,7 +1,8 @@
 package com.snapswap.jumio
 
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
 import spray.json._
 
 object EnumJumioDocTypes extends Enumeration {
@@ -85,14 +86,15 @@ case class JumioDocument(`type`: Option[EnumJumioDocTypes.JumioDocType],
                          status: Option[EnumJumioDocumentStatus.JumioDocumentStatus]) {
   override def toString: String = `type` match {
     case None => "N/A"
-    case Some(t) => (issuingCountry.map(v => s"$v ") :: Some(t.toString) ::
-      subType.map(v => s"($v)") ::
-      familyName.map(surname => " of '" + givenName.getOrElse("") + s"' '$surname'") ::
-      dob.map(v => s", born '$v'") ::
-      address.map(v => s" resident of '$v'") ::
-      number.map(v => s", '$v' number") ::
-      personalNumber.map(v => s", '$v' personal number") ::
-      expiry.map(v => s", expiry at '$v'") :: Nil).flatten.mkString
+    case Some(t) =>
+      (issuingCountry.map(v => s"$v ") :: Some(t.toString) ::
+        subType.map(v => s"($v)") ::
+        familyName.map(surname => " of '" + givenName.getOrElse("") + s"' '$surname'") ::
+        dob.map(v => s", born '$v'") ::
+        address.map(v => s" resident of '$v'") ::
+        number.map(v => s", '$v' number") ::
+        personalNumber.map(v => s", '$v' personal number") ::
+        expiry.map(v => s", expiry at '$v'") :: Nil).flatten.mkString
   }
 
   val birthdate: Option[LocalDate] = dob.map(JumioDocument.localDate)
@@ -137,9 +139,9 @@ object JumioDocument {
     )
   }
 
-  private val localDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd")
+  private val fomatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-  protected def localDate(`yyyy-MM-dd`: String): LocalDate = LocalDate.parse(`yyyy-MM-dd`, localDateFormat)
+  protected def localDate(`yyyy-MM-dd`: String): LocalDate = LocalDate.parse(`yyyy-MM-dd`, fomatter)
 }
 
 object EnumJumioAddressFormats extends Enumeration {

@@ -1,7 +1,8 @@
 package com.snapswap.jumio
 
+import java.time.ZonedDateTime
+
 import com.snapswap.jumio.callback.IdentityVerification
-import org.joda.time.DateTime
 
 object EnumJumioTxStatuses extends Enumeration {
   type JumioTxStatus = Value
@@ -55,13 +56,13 @@ object EnumJumioMRZCheck extends Enumeration {
   val not_available = Value("NOT_AVAILABLE")
 }
 
-case class JumioScanStatus(timestamp: DateTime,
+case class JumioScanStatus(timestamp: ZonedDateTime,
                            scanReference: String,
                            status: EnumJumioTxStatuses.JumioTxStatus) {
   override def toString: String = s"$timestamp: '$scanReference' is $status"
 }
 
-case class JumioScan(timestamp: DateTime,
+case class JumioScan(timestamp: ZonedDateTime,
                      scanReference: String,
                      transaction: JumioTx,
                      document: JumioDocument,
@@ -71,7 +72,7 @@ case class JumioScan(timestamp: DateTime,
 
 case class JumioTx(status: EnumJumioTxStatuses.JumioTxStatus,
                    optSource: Option[EnumJumioSources.JumioSource],
-                   date: Option[DateTime],
+                   date: Option[ZonedDateTime],
                    clientIp: Option[String],
                    customerId: Option[String],
                    additionalInformation: Option[String],

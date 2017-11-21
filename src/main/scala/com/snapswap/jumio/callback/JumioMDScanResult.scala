@@ -1,8 +1,9 @@
 package com.snapswap.jumio.callback
 
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
 import com.snapswap.jumio._
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
 import com.snapswap.jumio.unmarshaller._
 import spray.json._
 
@@ -59,7 +60,7 @@ case class JumioMDScanSuccess(docType: EnumJumioDocTypes.JumioDocType,
       "]"
   }
 
-  private val localDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd")
+  private val localDateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
   private def localDate(`yyyy-MM-dd`: String): LocalDate = LocalDate.parse(`yyyy-MM-dd`, localDateFormat)
 

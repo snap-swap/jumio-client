@@ -1,6 +1,6 @@
 package com.snapswap.jumio
 
-import org.joda.time.DateTime
+import java.time.ZonedDateTime
 
 
 case class JumioNetverifyInitParams(merchantScanReference: String,
@@ -11,4 +11,4 @@ case class JumioNetverifyInitParams(merchantScanReference: String,
 
 case class JumioNetverifyInitResponse(authorizationToken: String,
                                       jumioIdScanReference: String,
-                                      timestamp: DateTime)
+                                      timestamp: ZonedDateTime)

@@ -1,6 +1,7 @@
 package com.snapswap.jumio
 
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.{LocalDate, ZoneOffset}
+
 import org.scalatest._
 import spray.json._
 
@@ -13,7 +14,7 @@ class UnmarshallerSpec extends WordSpec with Matchers {
       val result = pendingScan.parseJson.convertTo[JumioScan]
       result.transaction.status shouldBe EnumJumioTxStatuses.pending
       result.transaction.source shouldBe EnumJumioSources.sdk
-      result.transaction.date shouldBe Some(DateTime.now(DateTimeZone.UTC).withDate(2016, 1, 1).withTime(0, 0, 0, 0))
+      result.transaction.date shouldBe Some(LocalDate.of(2016, 1, 1).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime.toZonedDateTime)
     }
     "parse details of success scan with identity verification " in {
       val result = doneScanWithIdentityVerification.parseJson.convertTo[JumioScan]

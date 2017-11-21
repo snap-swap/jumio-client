@@ -1,10 +1,11 @@
 package com.snapswap.jumio.callback
 
-import org.joda.time.DateTime
+import java.time.ZonedDateTime
+
 import akka.http.scaladsl.model.Uri
 import com.snapswap.jumio._
-import spray.json._
 import com.snapswap.jumio.unmarshaller._
+import spray.json._
 
 case class JumioChecks(dataPositions: Boolean,
                        documentValidation: Boolean,
@@ -83,9 +84,9 @@ trait JumioScanResult extends JumioNetverifyResult {
 
   def checks: JumioChecks
 
-  def timestamp: Option[DateTime]
+  def timestamp: Option[ZonedDateTime]
 
-  def callbackTimestamp: Option[DateTime]
+  def callbackTimestamp: Option[ZonedDateTime]
 
   override def merchantScanReference: String
 
@@ -138,8 +139,8 @@ case class JumioScanSuccess(scanReference: String,
                             status: EnumJumioVerificationStatuses.JumioVerificationStatus,
                             source: EnumJumioSources.JumioSource,
                             checks: JumioChecks,
-                            timestamp: Option[DateTime],
-                            callbackTimestamp: Option[DateTime],
+                            timestamp: Option[ZonedDateTime],
+                            callbackTimestamp: Option[ZonedDateTime],
                             document: JumioDocument,
                             merchantScanReference: String,
                             customerId: Option[String],
@@ -161,8 +162,8 @@ case class JumioScanSuccess(scanReference: String,
 case class JumioScanFailure(scanReference: String,
                             status: EnumJumioVerificationStatuses.JumioVerificationStatus,
                             source: EnumJumioSources.JumioSource, checks: JumioChecks,
-                            timestamp: Option[DateTime],
-                            callbackTimestamp: Option[DateTime],
+                            timestamp: Option[ZonedDateTime],
+                            callbackTimestamp: Option[ZonedDateTime],
                             rejectReason: JumioRejectReason,
                             merchantScanReference: String,
                             customerId: Option[String],
