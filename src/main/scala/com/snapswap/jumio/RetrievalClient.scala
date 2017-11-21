@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.scaladsl.{Http, HttpExt}
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
@@ -37,7 +37,6 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
                               override val clientCompanyName: String,
                               override val clientApplicationName: String,
                               override val clientVersion: String,
-                              override val useSingleConnectionPool: Boolean,
                               apiHost: String = "lon.netverify.com",
                               maxRetries: Int = 10)
                              (implicit val system: ActorSystem,
@@ -47,8 +46,6 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
   override val log = Logging(system, this.getClass)
   private val baseURL = s"/api/netverify/v2"
 
-  private lazy val http: HttpExt = Http(system)
-
   private lazy val flow: Connection = Http().cachedHostConnectionPoolHttps[UUID](apiHost, 443,
     settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)).log("jumio")
 
@@ -56,11 +53,7 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
     settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)).log("jumio multi document retrieval")
 
   private def requestForImage(request: HttpRequest, isMd: Boolean): Future[RawImage] = {
-    if (useSingleConnectionPool) {
-      send(request.withHeaders(authHeaders), if (isMd) mdFlow else flow)(parseRawImage)
-    } else {
-      send(request.withHeaders(authHeaders), http)(parseRawImage)
-    }
+    send(request.withHeaders(authHeaders), if (isMd) mdFlow else flow)(parseRawImage)
   }
 
   private def parseRawImage: ResponseEntity => Future[RawImage] = { response =>
@@ -82,15 +75,8 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
 
   private def get[T](path: String, isMd: Boolean, query: Map[String, String] = Map())
                     (parser: JsValue => T): Future[T] = {
-    if (useSingleConnectionPool) {
-      val url = baseURL + path + parameters(query)
-      requestForJson(Get(url), if (isMd) mdFlow else flow)(parser)
-    } else {
-      val domain = if (isMd) s"retrieval.$apiHost" else apiHost
-      val url = s"https://$domain$baseURL$path${parameters(query)}"
-
-      requestForJson(Get(url), http)(parser)
-    }
+    val url = baseURL + path + parameters(query)
+    requestForJson(Get(url), if (isMd) mdFlow else flow)(parser)
   }
 
   override def scanStatus(scanReference: String): Future[JumioScanStatus] = {

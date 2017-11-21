@@ -33,8 +33,6 @@ trait JumioClient {
 
   def log: LoggingAdapter
 
-  def useSingleConnectionPool: Boolean
-
   implicit def system: ActorSystem
 
   implicit def ctx: ExecutionContext

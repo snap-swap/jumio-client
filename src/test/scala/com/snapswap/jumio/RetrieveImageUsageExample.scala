@@ -26,7 +26,6 @@ object RetrieveImageUsageExample extends App {
     clientCompanyName = "snapswap",
     clientApplicationName = "remote-kyc",
     clientVersion = "v1",
-    useSingleConnectionPool = true,
     apiHost = "netverify.com"
   )
 

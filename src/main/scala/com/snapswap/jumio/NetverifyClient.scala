@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.scaladsl.{Http, HttpExt}
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
@@ -36,7 +36,6 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
                               override val clientCompanyName: String,
                               override val clientApplicationName: String,
                               override val clientVersion: String,
-                              override val useSingleConnectionPool: Boolean,
                               apiHost: String = "lon.netverify.com",
                               maxRetries: Int = 10)
                              (implicit val system: ActorSystem,
@@ -46,8 +45,6 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
   override val log = Logging(system, this.getClass)
   private val baseURL = s"/api/netverify/v2"
 
-  private lazy val http: HttpExt = Http(system)
-
   private lazy val flow: Connection = Http().cachedHostConnectionPoolHttps[UUID](apiHost, 443,
     settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)).log("jumio")
 
@@ -55,20 +52,11 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
     settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)).log("jumio multi document")
 
   private def post[T](path: String, data: JsValue, isMd: Boolean)(parser: JsValue => T): Future[T] = {
-    if (useSingleConnectionPool) {
-      val request =
-        Post(baseURL + path)
-          .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.toString))
+    val request =
+      Post(baseURL + path)
+        .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.toString))
 
-      requestForJson(request, if (isMd) mdFlow else flow)(parser)
-    } else {
-      val domain = if (isMd) s"upload.$apiHost" else apiHost
-      val request =
-        Post(s"https://$domain$baseURL$path")
-          .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.toString))
-
-      requestForJson(request, http)(parser)
-    }
+    requestForJson(request, if (isMd) mdFlow else flow)(parser)
   }
 
   override def initNetverify(merchantScanReference: String,
