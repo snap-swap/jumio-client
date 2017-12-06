@@ -1,0 +1,25 @@
+package com.snapswap.jumio.model
+
+
+object EnumJumioDocumentStatus extends Enumeration {
+  type JumioDocumentStatus = Value
+
+  val UNKNOWN = Value("UNKNOWN")
+
+  //from md callback
+  val UPLOADED = Value("UPLOADED")
+  val EXTRACTED = Value("EXTRACTED")
+  val DISCARDED = Value("DISCARDED")
+
+  //from retrieval api
+  val NO_ID_UPLOADED = Value("NO_ID_UPLOADED")
+  val DOCUMENT_PRESENT = Value("DOCUMENT_PRESENT")
+  val NO_DOCUMENT_PRESENT = Value("NO_DOCUMENT_PRESENT")
+  val DENIED_UNSUPPORTED_DOCUMENT_TYPE = Value("DENIED_UNSUPPORTED_DOCUMENT_TYPE")
+  val APPROVED_VERIFIED = Value("APPROVED_VERIFIED")
+  val DENIED_FRAUD = Value("DENIED_FRAUD")
+  val DENIED_UNSUPPORTED_ID_TYPE = Value("DENIED_UNSUPPORTED_ID_TYPE")
+  val DENIED_UNSUPPORTED_ID_COUNTRY = Value("DENIED_UNSUPPORTED_ID_COUNTRY")
+  val DENIED_NAME_MISMATCH = Value("DENIED_NAME_MISMATCH")
+  val ERROR_NOT_READABLE_ID = Value("ERROR_NOT_READABLE_ID")
+}

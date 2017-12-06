@@ -3,6 +3,8 @@ package com.snapswap.jumio
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model.MediaTypes
+import com.snapswap.jumio.http.AkkaHttpRetrievalClient
+import com.snapswap.jumio.model.retrieval.{JumioImage, JumioImageRawData, JumioImagesInfo}
 
 import scala.concurrent.Future
 
@@ -30,7 +32,7 @@ object RetrieveImageUsageExample extends App {
   )
 
 
-  def fileWriter(bss: RawImage, path: String): Future[IOResult] = {
+  def fileWriter(bss: JumioImageRawData, path: String): Future[IOResult] = {
     val extension = bss.contentType.mediaType match {
       case MediaTypes.`image/jpeg` =>
         "jpg"
@@ -44,7 +46,7 @@ object RetrieveImageUsageExample extends App {
 
   def saveImagesForJumioScan(scanReference: String, dir: String)
                             (getImageInfoMethod: String => Future[JumioImagesInfo],
-                             obtainImageMethod: String => Future[RawImage]): Future[Unit] = (for {
+                             obtainImageMethod: String => Future[JumioImageRawData]): Future[Unit] = (for {
     scan <- getImageInfoMethod(scanReference)
     doneImages = scan.images.map { case JumioImage(classifier, href, _) =>
       obtainImageMethod(href).flatMap { response =>

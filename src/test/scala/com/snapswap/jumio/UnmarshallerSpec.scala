@@ -2,12 +2,14 @@ package com.snapswap.jumio
 
 import java.time.{LocalDate, ZoneOffset}
 
+import com.snapswap.jumio.json.protocol.JumioUnmarshaller
+import com.snapswap.jumio.model._
+import com.snapswap.jumio.model.netverify.{JumioRejectReason, JumioRejection}
+import com.snapswap.jumio.model.retrieval.{JumioImage, JumioImagesInfo, JumioScan}
 import org.scalatest._
 import spray.json._
 
-class UnmarshallerSpec extends WordSpec with Matchers {
-
-  import unmarshaller._
+class UnmarshallerSpec extends WordSpecLike with Matchers with JumioUnmarshaller {
 
   "Unmarshaller" should {
     "parse details of PENDING scan " in {
