@@ -1,6 +1,7 @@
 package com.snapswap.jumio
 
-import com.snapswap.jumio.model.retrieval.{JumioImageRawData, JumioImagesInfo, JumioScan, JumioScanStatus}
+import akka.stream.scaladsl.Source
+import com.snapswap.jumio.model.retrieval._
 
 import scala.concurrent.Future
 
@@ -16,8 +17,8 @@ trait RetrievalClient {
 
   def mdScanImages(scanReference: String): Future[JumioImagesInfo]
 
-  def obtainImage(href: String): Future[JumioImageRawData]
+  def obtainImage(images: Seq[JumioImage]): Source[(JumioImageRawData, JumioImage), Any]
 
-  def obtainMdImage(href: String): Future[JumioImageRawData]
+  def obtainMdImage(images: Seq[JumioImage]): Source[(JumioImageRawData, JumioImage), Any]
 }
 
