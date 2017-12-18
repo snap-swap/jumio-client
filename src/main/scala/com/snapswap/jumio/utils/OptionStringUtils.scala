@@ -11,6 +11,6 @@ object OptionStringUtils {
       opt.getOrElse("UNKNOWN")
 
     def toDateTime: Option[ZonedDateTime] =
-      opt.map(ZonedDateTime.parse(_, DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+      opt.map(ZonedDateTime.parse(_, DateTimeFormatter.ISO_ZONED_DATE_TIME))
   }
 }

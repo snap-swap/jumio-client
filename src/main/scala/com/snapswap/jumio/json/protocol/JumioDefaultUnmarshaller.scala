@@ -11,7 +11,7 @@ trait JumioDefaultUnmarshaller extends {
   self: DefaultJsonProtocol =>
 
   implicit object DateJsonFormat extends RootJsonFormat[LocalDate] {
-    private val formatter = DateTimeFormatter.ISO_OFFSET_DATE
+    private val formatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     override def read(json: JsValue): LocalDate = json match {
       case JsString(str) =>
@@ -31,7 +31,7 @@ trait JumioDefaultUnmarshaller extends {
 
 
   implicit object DateTimeJsonFormat extends RootJsonFormat[ZonedDateTime] {
-    private val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+    private val formatter = DateTimeFormatter.ISO_ZONED_DATE_TIME
 
     override def read(json: JsValue): ZonedDateTime = json match {
       case JsString(str) =>
