@@ -1,7 +1,7 @@
 package com.snapswap.jumio.http
 
 
-import java.util.UUID
+import java.util.{Base64, UUID}
 
 import akka.actor.ActorSystem
 import akka.event.Logging
@@ -10,10 +10,14 @@ import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.Materializer
+import akka.stream.scaladsl.{Sink, Source}
+import akka.util.ByteString
 import com.snapswap.jumio._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
 import com.snapswap.jumio.model._
 import com.snapswap.jumio.model.init.{JumioMdNetverifyInitParams, JumioMdNetverifyInitResponse, JumioNetverifyInitParams, JumioNetverifyInitResponse}
+import com.snapswap.jumio.model.netverify.{PerformNetverifyRequest, PerformNetverifyResponse}
+import com.snapswap.jumio.model.retrieval.JumioImageRawData
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -70,5 +74,44 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
     post("/acquisitions", params.toJson, isMd = true) { response =>
       response.convertTo[JumioMdNetverifyInitResponse]
     }
+  }
+
+  override def performNetverify(merchantIdScanReference: String,
+                                country: String,
+                                face: JumioImageRawData,
+                                idType: EnumJumioDocTypes.JumioDocType,
+                                idFront: JumioImageRawData,
+                                idBack: Option[JumioImageRawData],
+                                callbackUrl: String
+                               ): Future[PerformNetverifyResponse] = {
+
+    for {
+      faceString <- encode(face.data)
+      idFrontString <- encode(idFront.data)
+      idBackString: Option[String] <- idBack.map(_.data).map(encode).map(_.map(Some(_))).getOrElse(Future.successful(None))
+      params = PerformNetverifyRequest(
+        merchantIdScanReference,
+        faceString,
+        face.contentType.mediaType.toString,
+        idFrontString,
+        idFront.contentType.mediaType.toString,
+        idBackString,
+        idBack.map(_.contentType.mediaType.toString),
+        country,
+        idType.toString,
+        callbackUrl
+      )
+      result <- post("/performNetverify", params.toJson, isMd = true) { response =>
+        response.convertTo[PerformNetverifyResponse]
+      }
+    } yield result
+  }
+
+  private def encode(data: Source[ByteString, Any]): Future[String] = {
+    data
+      .map(_.toByteBuffer.array())
+      .runWith(Sink.fold(Array.empty[Byte]) { case (acc, next) =>
+        acc ++ next
+      }).map(Base64.getEncoder.encodeToString(_))
   }
 }

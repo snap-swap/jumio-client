@@ -4,7 +4,7 @@ import com.snapswap.jumio.model
 import com.snapswap.jumio.model._
 import com.snapswap.jumio.model.errors.JumioMalformedResponse
 import com.snapswap.jumio.model.init.{JumioMdNetverifyInitParams, JumioMdNetverifyInitResponse, JumioNetverifyInitParams, JumioNetverifyInitResponse}
-import com.snapswap.jumio.model.netverify.{JumioRejectReason, JumioRejection}
+import com.snapswap.jumio.model.netverify.{JumioRejectReason, JumioRejection, PerformNetverifyRequest, PerformNetverifyResponse}
 import com.snapswap.jumio.model.retrieval._
 import spray.json._
 
@@ -149,7 +149,28 @@ trait JumioUnmarshaller
   }
 
   implicit val jumioImagesInfoFormat = jsonFormat(JumioImagesInfo,
-    "timestamp", "scanReference", "images"
+    "timestamp",
+    "scanReference",
+    "images"
+  )
+
+  implicit val performNetverifyRequestFormat = jsonFormat(PerformNetverifyRequest,
+    "merchantIdScanReference",
+    "faceImage",
+    "faceImageMimeType",
+    "frontsideImage",
+    "frontsideImageMimeType",
+    "backsideImage",
+    "backsideImageMimeType",
+    "country",
+    "idType",
+    "callbackUrl",
+    "enabledFields"
+  )
+
+  implicit val performNetverifyResponseFormat = jsonFormat(PerformNetverifyResponse,
+    "jumioIdScanReference",
+    "timestamp"
   )
 }
 
