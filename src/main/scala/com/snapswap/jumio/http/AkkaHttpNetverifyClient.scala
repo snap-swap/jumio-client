@@ -10,7 +10,7 @@ import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.snapswap.jumio._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
@@ -82,8 +82,7 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
                                 idType: EnumJumioDocTypes.JumioDocType,
                                 idFront: JumioImageRawData,
                                 idBack: Option[JumioImageRawData],
-                                callbackUrl: String
-                               ): Future[PerformNetverifyResponse] = {
+                                callbackUrl: String): Future[PerformNetverifyResponse] = {
 
     for {
       faceString <- encode(face.data)
@@ -101,17 +100,15 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
         idType.toString,
         callbackUrl
       )
-      result <- post("/performNetverify", params.toJson, isMd = true) { response =>
+      result <- post("/performNetverify", params.toJson, isMd = false) { response =>
         response.convertTo[PerformNetverifyResponse]
       }
     } yield result
   }
 
   private def encode(data: Source[ByteString, Any]): Future[String] = {
-    data
-      .map(_.toByteBuffer.array())
-      .runWith(Sink.fold(Array.empty[Byte]) { case (acc, next) =>
-        acc ++ next
-      }).map(Base64.getEncoder.encodeToString(_))
+    data.runFold(ByteString.createBuilder) { case (builder, bs) =>
+      builder.append(bs)
+    }.map(builder => Base64.getEncoder.encodeToString(builder.result().toArray))
   }
 }

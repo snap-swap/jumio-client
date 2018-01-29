@@ -28,6 +28,5 @@ trait NetverifyClient {
                        idType: EnumJumioDocTypes.JumioDocType,
                        idFront: JumioImageRawData,
                        idBack: Option[JumioImageRawData],
-                       callbackUrl: String
-                      ): Future[PerformNetverifyResponse]
+                       callbackUrl: String): Future[PerformNetverifyResponse]
 }
