@@ -3,23 +3,27 @@ package com.snapswap.jumio.http
 
 import java.util.{Base64, UUID}
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.Materializer
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.pattern._
 import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import akka.stream.{Materializer, OverflowStrategy}
+import akka.util.{ByteString, Timeout}
 import com.snapswap.jumio._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
 import com.snapswap.jumio.model._
+import com.snapswap.jumio.model.errors.JumioEntityNotFoundError
 import com.snapswap.jumio.model.init.{JumioMdNetverifyInitParams, JumioMdNetverifyInitResponse, JumioNetverifyInitParams, JumioNetverifyInitResponse}
 import com.snapswap.jumio.model.netverify.{PerformNetverifyRequest, PerformNetverifyResponse}
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
 import spray.json._
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 
@@ -42,6 +46,34 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
 
   private lazy val mdFlow: Connection = Http().cachedHostConnectionPoolHttps[UUID](s"upload.$apiHost", 443,
     settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)).log("jumio multi document")
+
+
+  ///////////////////////// EXPERIMENTAL CLIENT /////////////////////////
+  private implicit val timeout: Timeout = Timeout(1.minute)
+
+  private lazy val streamingFlow: HttpClient.StreamingConnection =
+    Http().cachedHostConnectionPoolHttps[HttpClient.ProxyMeta](apiHost, 443,
+      settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)).log("jumio streaming")
+
+  private lazy val experimentalHttpClient: ActorRef = HttpClient.apply(streamingFlow, 5000, OverflowStrategy.dropNew)
+
+  private lazy val httpProxy = system.actorOf(HttpClientProxy.props(experimentalHttpClient))
+
+  private def processStreamingResponse(response: HttpClient.WrappedResponse): HttpResponse = response match {
+    case HttpClient.WrappedResponse(Left(ex), HttpClient.ProxyMeta(_, _, req)) =>
+      log.error(ex, s"Response to ${req.method.value} ${req.uri} failed")
+      throw ex
+    case HttpClient.WrappedResponse(Right(r), HttpClient.ProxyMeta(_, _, req)) if r.status == StatusCodes.NotFound =>
+      log.error(s"Response to ${req.method.value} ${req.uri} is ${r.status}")
+      r.discardEntityBytes()
+      throw JumioEntityNotFoundError
+    case HttpClient.WrappedResponse(Right(r), HttpClient.ProxyMeta(_, _, req)) =>
+      log.info(s"Response to ${req.method.value} ${req.uri} is ${r.status}")
+      r
+  }
+
+  ////////////////////////////////////////////////////////////////////////
+
 
   private def post[T](path: String, data: JsValue, isMd: Boolean)(parser: JsValue => T): Future[T] = {
     val request =
@@ -100,9 +132,17 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
         idType.toString,
         callbackUrl
       )
-      result <- post("/performNetverify", params.toJson, isMd = false) { response =>
-        response.convertTo[PerformNetverifyResponse]
-      }
+      request = Post(s"$baseURL/performNetverify")
+        .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), params.toJson.compactPrint))
+      response <- (httpProxy ? request).mapTo[HttpClient.WrappedResponse].recover {
+        case ex =>
+          log.error(ex, s"Ask request to proxy actor with response to ${request.method.value} ${request.uri} failed")
+          throw ex
+      }.map(processStreamingResponse)
+      result <- Unmarshal(response).to[String].map { r => r.parseJson.convertTo[PerformNetverifyResponse] }
+      //      result <- post("/performNetverify", params.toJson, isMd = false) { response =>
+      //        response.convertTo[PerformNetverifyResponse]
+      //      }
     } yield result
   }
 
