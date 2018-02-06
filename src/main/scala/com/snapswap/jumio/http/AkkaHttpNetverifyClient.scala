@@ -133,13 +133,16 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
         callbackUrl
       )
       request = Post(s"$baseURL/performNetverify")
+        .withHeaders(authHeaders)
         .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), params.toJson.compactPrint))
       response <- (httpProxy ? request).mapTo[HttpClient.WrappedResponse].recover {
         case ex =>
           log.error(ex, s"Ask request to proxy actor with response to ${request.method.value} ${request.uri} failed")
           throw ex
       }.map(processStreamingResponse)
-      result <- Unmarshal(response).to[String].map { r => r.parseJson.convertTo[PerformNetverifyResponse] }
+      result <- Unmarshal(response).to[String].map { r =>
+        r.parseJson.convertTo[PerformNetverifyResponse]
+      }
       //      result <- post("/performNetverify", params.toJson, isMd = false) { response =>
       //        response.convertTo[PerformNetverifyResponse]
       //      }
