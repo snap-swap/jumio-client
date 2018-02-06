@@ -15,6 +15,15 @@ trait JumioUnmarshaller
     with JumioEnumsUnmarshaller
     with JumioAddressUnmarshaller {
 
+  private implicit class JsonLifter(json: JsValue){
+    def convertWithNullCheck[T](implicit reader: JsonReader[T]): Option[T] = json match {
+      case JsNull =>
+        None
+      case j =>
+        Some(j.convertTo[T])
+    }
+  }
+
   implicit val jumioScanStatusFormat = jsonFormat3(JumioScanStatus)
   implicit val jumioTxFormat = jsonFormat(JumioTx,
     "status", "source", "date", "clientIp", "customerId", "additionalInformation",
@@ -78,7 +87,8 @@ trait JumioUnmarshaller
 
         JumioVerification(
           fields.get("mrzCheck").map(_.convertTo[EnumJumioMRZCheck.JumioMRZCheck]),
-          fields.get("identityVerification").map(_.convertTo[IdentityVerification])
+          fields.get("identityVerification").flatMap(_.convertWithNullCheck[IdentityVerification]),
+          fields.get("faceMatch").map(_.convertTo[String]).map(_.toFloat)
         )
       case x => deserializationError("Expected JumioVerification as object, but got " + x)
     }

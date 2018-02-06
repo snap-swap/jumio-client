@@ -13,7 +13,7 @@ scalacOptions := Seq(
   "-language:existentials",
   "-language:higherKinds",
   "-language:implicitConversions",
-  "-Xfatal-warnings",
+  // "-Xfatal-warnings",
   "-Xlint",
   "-Yno-adapted-args",
   "-Ywarn-dead-code",

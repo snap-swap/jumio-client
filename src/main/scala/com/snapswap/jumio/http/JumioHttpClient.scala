@@ -5,7 +5,6 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http.HostConnectionPool
-import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, Authorization, BasicHttpCredentials, `User-Agent`}
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -15,7 +14,6 @@ import com.snapswap.jumio.model.errors.{JumioConnectionError, JumioEntityNotFoun
 import spray.json.{JsValue, _}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 
@@ -79,17 +77,7 @@ private[http] trait JumioHttpClient {
 
   protected def requestForJson[T](request: HttpRequest, connection: Connection)(parse: JsValue => T): Future[T] =
     send(request.withHeaders(authHeaders :+ Accept(MediaTypes.`application/json`)), connection)(asJson)
-      .map(parseJsValue(_, parse))
-
-  protected def send[T](request: HttpRequest, http: HttpExt)
-                       (transform: ResponseEntity => Future[T]): Future[T] = {
-    http
-      .singleRequest(request, log = log)
-      .recover {
-        case NonFatal(ex) =>
-          throw JumioConnectionError(s"${request.method.value} ${request.uri} failed: ${ex.getMessage}", ex)
-      }.flatMap(processResponse(request, _, transform))
-  }
+      .map(v => parseJsValue(v, parse))
 
   private def processResponse[T](request: HttpRequest, response: HttpResponse, transform: ResponseEntity => Future[T]): Future[T] = {
     if (response.status == StatusCodes.NotFound) {
@@ -100,11 +88,6 @@ private[http] trait JumioHttpClient {
       log.debug(s"Response to ${request.method.value} ${request.uri} is ${response.status}")
       transform(response.entity)
     }
-  }
-
-  protected def requestForJson[T](request: HttpRequest, http: HttpExt)(parse: JsValue => T): Future[T] = {
-    send(request.withHeaders(authHeaders :+ Accept(MediaTypes.`application/json`)), http)(asJson)
-      .map(parseJsValue(_, parse))
   }
 
   private def parseJsValue[T](jsValue: JsValue, parse: JsValue => T): T = {
