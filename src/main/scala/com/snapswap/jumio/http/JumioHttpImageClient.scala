@@ -23,7 +23,7 @@ trait JumioHttpImageClient {
     }).via(connection)
       .map {
         case (Success(response), imageInfo) =>
-          JumioImageRawData(response.entity.withoutSizeLimit().dataBytes, response.entity.contentType) -> imageInfo
+          JumioImageRawData(response.entity.dataBytes, response.entity.contentType) -> imageInfo
         case (Failure(ex), imageInfo) =>
           log.error(ex, s"retrieval for $imageInfo failed with ${ex.getMessage}")
           throw ex
