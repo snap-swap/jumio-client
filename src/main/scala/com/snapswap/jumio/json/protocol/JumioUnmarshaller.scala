@@ -127,8 +127,20 @@ trait JumioUnmarshaller
   }
 
   implicit val jumioDocumentReader = jsonFormat(JumioDocument.apply,
-    "type", "subType", "issuingCountry", "firstName", "lastName", "dob",
-    "expiry", "number", "personalNumber", "address", "extractedData", "status"
+    "type",
+    "subType",
+    "issuingCountry",
+    "firstName",
+    "lastName",
+    "dob",
+    "expiry",
+    "number",
+    "gender",
+    "nationality",
+    "personalNumber",
+    "address",
+    "extractedData",
+    "status"
   )
   implicit val jumioScanReader = jsonFormat5(JumioScan)
 

@@ -2,7 +2,7 @@ name := "jumio-client"
 
 organization := "com.snapswap"
 
-version := "1.0.34.EXPERIMENTAL"
+version := "1.0.35.EXPERIMENTAL"
 
 scalaVersion := "2.11.11"
 
@@ -13,7 +13,7 @@ scalacOptions := Seq(
   "-language:existentials",
   "-language:higherKinds",
   "-language:implicitConversions",
-  // "-Xfatal-warnings",
+  "-Xfatal-warnings",
   "-Xlint",
   "-Yno-adapted-args",
   "-Ywarn-dead-code",

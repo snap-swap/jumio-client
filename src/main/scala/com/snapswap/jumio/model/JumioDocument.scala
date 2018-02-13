@@ -15,6 +15,8 @@ case class JumioDocument(`type`: Option[EnumJumioDocTypes.JumioDocType],
                          dob: Option[String],
                          expiry: Option[String],
                          number: Option[String],
+                         gender: Option[String],
+                         nationality: Option[String],
                          personalNumber: Option[String],
                          address: Option[JumioAddress],
                          extractedData: Option[JumioExtractedData],
@@ -29,6 +31,8 @@ case class JumioDocument(`type`: Option[EnumJumioDocTypes.JumioDocType],
         address.map(v => s" resident of '$v'") ::
         number.map(v => s", '$v' number") ::
         personalNumber.map(v => s", '$v' personal number") ::
+        gender.map(v => s", '$v' gender") ::
+        nationality.map(v => s", '$v' nationality") ::
         expiry.map(v => s", expiry at '$v'") :: Nil).flatten.mkString
   }
 
@@ -62,9 +66,25 @@ object JumioDocument {
 
     def status = parameters.get("status").map(_.parseJson.convertTo[EnumJumioDocumentStatus.JumioDocumentStatus])
 
+    def gender = parameters.get("gender")
+
+    def nationality = parameters.get("nationality")
+
     JumioDocument(
-      idType, idSubtype, idCountry, idFirstName, idLastName, idDob, idExpiry,
-      idNumber, personalNumber, idAddress, extractedData, status
+      idType,
+      idSubtype,
+      idCountry,
+      idFirstName,
+      idLastName,
+      idDob,
+      idExpiry,
+      idNumber,
+      gender,
+      nationality,
+      personalNumber,
+      idAddress,
+      extractedData,
+      status
     )
   }
 
