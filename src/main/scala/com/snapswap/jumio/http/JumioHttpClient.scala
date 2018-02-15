@@ -1,24 +1,22 @@
 package com.snapswap.jumio.http
 
-import java.util.UUID
-
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, Authorization, BasicHttpCredentials, `User-Agent`}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.util.Timeout
+import com.snapswap.http.client.HttpClient
 import com.snapswap.jumio.model.errors.{JumioConnectionError, JumioEntityNotFoundError, JumioMalformedResponse}
 import spray.json.{JsValue, _}
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 
 private[http] trait JumioHttpClient {
-  protected type Connection = Flow[(HttpRequest, UUID), (Try[HttpResponse], UUID), HostConnectionPool]
 
   def clientToken: String
 
@@ -38,6 +36,8 @@ private[http] trait JumioHttpClient {
 
   implicit def materializer: Materializer
 
+  implicit val responseAwaitingTimeout: Timeout = Timeout(1.minute)
+
   implicit def headers(h: Seq[HttpHeader]): collection.immutable.Seq[HttpHeader] =
     collection.immutable.Seq(h).flatten
 
@@ -49,16 +49,15 @@ private[http] trait JumioHttpClient {
     Authorization(BasicHttpCredentials(clientToken, clientSecret))
   )
 
-  protected def send[T](request: HttpRequest, connection: Connection)
+  protected def send[T](request: HttpRequest, client: HttpClient)
                        (transform: ResponseEntity => Future[T]): Future[T] =
-    Source.single(request -> UUID.randomUUID()).via(connection).runWith(Sink.head)
-      .recoverWith {
-        case ex =>
-          Future.failed(JumioConnectionError(s"${request.method.value} ${request.uri} failed: ${ex.getMessage}", ex))
-      }.flatMap {
-      case (Success(response), _) =>
+    client.send(request).recoverWith {
+      case ex =>
+        Future.failed(JumioConnectionError(s"${request.method.value} ${request.uri} failed: ${ex.getMessage}", ex))
+    }.flatMap {
+      case Success(response) =>
         processResponse(request, response, transform)
-      case (Failure(ex), _) =>
+      case Failure(ex) =>
         log.error(ex, s"${request.method.value} ${request.uri} failed with ${ex.getMessage}")
         Future.failed(ex)
     }
@@ -75,8 +74,8 @@ private[http] trait JumioHttpClient {
       }
     }
 
-  protected def requestForJson[T](request: HttpRequest, connection: Connection)(parse: JsValue => T): Future[T] =
-    send(request.withHeaders(authHeaders :+ Accept(MediaTypes.`application/json`)), connection)(asJson)
+  protected def requestForJson[T](request: HttpRequest, client: HttpClient)(parse: JsValue => T): Future[T] =
+    send(request.withHeaders(authHeaders :+ Accept(MediaTypes.`application/json`)), client)(asJson)
       .map(v => parseJsValue(v, parse))
 
   private def processResponse[T](request: HttpRequest, response: HttpResponse, transform: ResponseEntity => Future[T]): Future[T] = {

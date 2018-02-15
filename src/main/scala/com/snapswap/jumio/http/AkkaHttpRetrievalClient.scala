@@ -1,15 +1,13 @@
 package com.snapswap.jumio.http
 
 
-import java.util.UUID
-
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.Materializer
 import akka.stream.scaladsl.Source
+import akka.stream.{Materializer, OverflowStrategy}
+import com.snapswap.http.client.HttpClient
+import com.snapswap.http.client.HttpConnection._
 import com.snapswap.jumio._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
 import com.snapswap.jumio.model.retrieval._
@@ -35,38 +33,33 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
   override val log = Logging(system, this.getClass)
   private val baseURL = s"/api/netverify/v2"
 
-  private lazy val netverifyFlow: Connection = Http().cachedHostConnectionPoolHttps[UUID](
-    apiHost, 443, settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)
+  private val connection: Connection = httpsPool(apiHost, 443,
+    defaultClientHttpsContext,
+    defaultConnectionPoolSettings.withMaxRetries(maxRetries),
+    systemLogging
   ).log("jumio netverify retrieval")
 
-  private lazy val mdFlow: Connection =
-    Http().cachedHostConnectionPoolHttps[UUID](
-      s"retrieval.$apiHost", 443, settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)
-    ).log("jumio multi document retrieval")
+  private val mdConnection: Connection = httpsPool(s"retrieval.$apiHost", 443,
+    defaultClientHttpsContext,
+    defaultConnectionPoolSettings.withMaxRetries(maxRetries),
+    systemLogging
+  ).log("jumio multi document retrieval")
 
-  private lazy val imagesNetverifyFlow: ImageConnection =
-    Http().cachedHostConnectionPoolHttps[JumioImage](
-      apiHost, 443, settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)
-    ).log("jumio images netverify retrieval")
-
-  private lazy val imagesMdFlow: ImageConnection =
-    Http().cachedHostConnectionPoolHttps[JumioImage](
-      s"retrieval.$apiHost", 443, settings = ConnectionPoolSettings(system).withMaxRetries(maxRetries)
-    ).log("jumio images multi document retrieval")
+  private val client: HttpClient = HttpClient(connection, 5000, OverflowStrategy.dropNew)
+  private val mdClient: HttpClient = HttpClient(mdConnection, 5000, OverflowStrategy.dropNew)
 
 
-   private def parameters[T](query: Map[String, String]): String =
+  private def parameters[T](query: Map[String, String]): String =
     if (query.isEmpty) {
       ""
     } else {
       "?" + query.map(tup => s"${tup._1}=${tup._2}").mkString("&")
     }
 
-
   private def get[T](path: String, isMd: Boolean, query: Map[String, String] = Map())
                     (parser: JsValue => T): Future[T] = {
     val url = baseURL + path + parameters(query)
-    requestForJson(Get(url), if (isMd) mdFlow else netverifyFlow)(parser)
+    requestForJson(Get(url), if (isMd) mdClient else client)(parser)
   }
 
   override def scanStatus(scanReference: String): Future[JumioScanStatus] = {
@@ -98,9 +91,9 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
     }
 
   override def obtainImage(images: Seq[JumioImage]): Source[(JumioImageRawData, JumioImage), Any] =
-    getImages(images, imagesNetverifyFlow)
+    getImages(images, client)
 
   override def obtainMdImage(images: Seq[JumioImage]): Source[(JumioImageRawData, JumioImage), Any] =
-    getImages(images, imagesMdFlow)
+    getImages(images, mdClient)
 
 }
