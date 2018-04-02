@@ -7,5 +7,7 @@ trait JumioResult {
   def scanReference: String
 
   def source: EnumJumioSources.JumioSource
+
+  def rawData: Map[String, String]
 }
 

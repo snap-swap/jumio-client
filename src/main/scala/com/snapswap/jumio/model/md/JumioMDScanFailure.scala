@@ -7,7 +7,8 @@ case class JumioMDScanFailure(merchantScanReference: String,
                               scanReference: String,
                               source: EnumJumioSources.JumioSource,
                               override val error: String,
-                              override val details: String)
+                              override val details: String,
+                              rawData: Map[String, String])
   extends JumioMDScanResult
     with JumioFailureResult {
 

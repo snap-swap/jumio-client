@@ -48,7 +48,8 @@ object JumioMDScanResult extends JumioUnmarshaller {
               signatureAvailable = extractedData.flatMap(_.signatureAvailable),
               accountNumber = extractedData.flatMap(_.accountNumber),
               issueDateRawFormat = extractedData.flatMap(_.issueDate),
-              address = extractedData.flatMap(_.address)
+              address = extractedData.flatMap(_.address),
+              rawData = parameters
             )
           case Some(JumioDocument(_, _, _, _, _, _, _, _, _,_, _, _, _, Some(docStatus)))
             if docStatus == EnumJumioDocumentStatus.DISCARDED =>
@@ -57,7 +58,8 @@ object JumioMDScanResult extends JumioUnmarshaller {
               scanReference = parseScanReference(parameters),
               source = source.getOrElse(EnumJumioSources.unknown),
               error = docStatus.toString,
-              s"Expected transaction status is 'EXTRACTED' or 'UPLOADED' but found 'DISCARDED'"
+              s"Expected transaction status is 'EXTRACTED' or 'UPLOADED' but found 'DISCARDED'",
+              parameters
             )
           case other =>
             JumioMDScanFailure(
@@ -65,7 +67,8 @@ object JumioMDScanResult extends JumioUnmarshaller {
               scanReference = parseScanReference(parameters),
               source = source.getOrElse(EnumJumioSources.unknown),
               error = "Unknown callback format",
-              s"Unknown callback format: '$other'"
+              s"Unknown callback format: '$other'",
+              parameters
             )
         }
       case Some(JumioTx(status, source, _, _, _, _, Some(merchantScanReference), _)) if status != EnumJumioTxStatuses.done =>
@@ -74,7 +77,8 @@ object JumioMDScanResult extends JumioUnmarshaller {
           scanReference = parseScanReference(parameters),
           source = source.getOrElse(EnumJumioSources.unknown),
           error = status.toString,
-          s"Expected transaction status is 'done' but found '$status'"
+          s"Expected transaction status is 'done' but found '$status'",
+          parameters
         )
       case Some(JumioTx(_, source, _, _, _, _, None, _)) =>
         JumioMDScanFailure(
@@ -82,7 +86,8 @@ object JumioMDScanResult extends JumioUnmarshaller {
           scanReference = parseScanReference(parameters),
           source = source.getOrElse(EnumJumioSources.unknown),
           error = "merchantScanReference must be presented",
-          s"merchantScanReference must be presented"
+          s"merchantScanReference must be presented",
+          parameters
         )
       case None =>
         throw new RuntimeException(s"JumioTx must be in callback")

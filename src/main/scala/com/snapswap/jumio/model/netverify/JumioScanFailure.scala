@@ -16,7 +16,8 @@ case class JumioScanFailure(scanReference: String,
                             merchantScanReference: String,
                             customerId: Option[String],
                             clientIp: Option[String],
-                            links: JumioScanLinks) extends JumioScanResult with JumioFailureResult {
+                            links: JumioScanLinks,
+                            rawData: Map[String, String]) extends JumioScanResult with JumioFailureResult {
   override def toString: String = {
     import OptionObjUtils._
 

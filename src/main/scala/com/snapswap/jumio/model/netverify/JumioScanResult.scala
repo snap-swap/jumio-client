@@ -27,6 +27,8 @@ trait JumioScanResult extends JumioResult {
   def clientIp: Option[String]
 
   def links: JumioScanLinks
+
+  def rawData: Map[String, String]
 }
 
 
@@ -79,7 +81,8 @@ object JumioScanResult extends JumioUnmarshaller {
         clientIp,
         additionalInformation,
         JumioScanLinks.of(parameters),
-        IdentityVerification.of(parameters)
+        IdentityVerification.of(parameters),
+        parameters
       )
       case "ERROR" =>
         JumioScanFailure(
@@ -93,7 +96,8 @@ object JumioScanResult extends JumioUnmarshaller {
           merchantScanReference = merchantIdScanReference,
           customerId = customerId,
           clientIp = clientIp,
-          links = JumioScanLinks.of(parameters)
+          links = JumioScanLinks.of(parameters),
+          rawData = parameters
         )
     }
   }

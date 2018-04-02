@@ -18,7 +18,8 @@ case class JumioMDScanSuccess(docType: EnumJumioDocTypes.JumioDocType,
                               signatureAvailable: Option[Boolean],
                               accountNumber: Option[String],
                               issueDateRawFormat: Option[String],
-                              address: Option[JumioAddress]) extends JumioMDScanResult {
+                              address: Option[JumioAddress],
+                              rawData: Map[String, String]) extends JumioMDScanResult {
   override def toString: String = {
     import OptionObjUtils._
 

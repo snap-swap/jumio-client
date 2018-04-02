@@ -17,7 +17,8 @@ case class JumioScanSuccess(scanReference: String,
                             clientIp: Option[String],
                             additionalInformation: String,
                             links: JumioScanLinks,
-                            identityVerification: Option[IdentityVerification]) extends JumioScanResult {
+                            identityVerification: Option[IdentityVerification],
+                            rawData: Map[String, String]) extends JumioScanResult {
   override def toString: String = {
     import OptionObjUtils._
 
