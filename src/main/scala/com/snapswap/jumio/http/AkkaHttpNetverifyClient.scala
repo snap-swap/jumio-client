@@ -88,20 +88,23 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
 
   override def performNetverify(merchantIdScanReference: String,
                                 country: String,
-                                face: JumioImageRawData,
+                                face: Option[JumioImageRawData],
                                 idType: EnumJumioDocTypes.JumioDocType,
                                 idFront: JumioImageRawData,
                                 idBack: Option[JumioImageRawData],
                                 callbackUrl: String): Future[PerformNetverifyResponse] = {
-
     for {
-      faceString <- encode(face.data)
+      faceString: Option[String] <- face.map(f => {
+        encode(f.data).map(Some(_))
+      }).getOrElse {
+        Future.successful(None)
+      }
       idFrontString <- encode(idFront.data)
       idBackString: Option[String] <- idBack.map(_.data).map(encode).map(_.map(Some(_))).getOrElse(Future.successful(None))
       params = PerformNetverifyRequest(
         merchantIdScanReference,
         faceString,
-        face.contentType.mediaType.toString,
+        face.map(_.contentType.mediaType.toString),
         idFrontString,
         idFront.contentType.mediaType.toString,
         idBackString,

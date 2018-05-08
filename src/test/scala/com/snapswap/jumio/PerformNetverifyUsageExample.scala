@@ -50,10 +50,10 @@ object PerformNetverifyUsageExample extends App {
     country = "BEL",
     idType = EnumJumioDocTypes.id_card,
     callbackUrl = "https://dev-rkyc.snapswap.vc/callbacks/jumio",
-    face = JumioImageRawData(
+    face = Some(JumioImageRawData(
       fileReader(face),
       ContentType(MediaTypes.`image/jpeg`)
-    ),
+    )),
     idFront = JumioImageRawData(
       fileReader(front),
       ContentType(MediaTypes.`image/jpeg`)

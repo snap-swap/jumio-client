@@ -1,8 +1,8 @@
 package com.snapswap.jumio.model.netverify
 
 case class PerformNetverifyRequest(merchantIdScanReference: String,
-                                   faceImage: String,
-                                   faceImageMimeType: String,
+                                   faceImage: Option[String],
+                                   faceImageMimeType: Option[String],
                                    frontsideImage: String,
                                    frontsideImageMimeType: String,
                                    backsideImage: Option[String],

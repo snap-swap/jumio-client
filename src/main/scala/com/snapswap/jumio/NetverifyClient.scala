@@ -24,7 +24,7 @@ trait NetverifyClient {
 
   def performNetverify(merchantIdScanReference: String,
                        country: String,
-                       face: JumioImageRawData,
+                       face: Option[JumioImageRawData],
                        idType: EnumJumioDocTypes.JumioDocType,
                        idFront: JumioImageRawData,
                        idBack: Option[JumioImageRawData],
