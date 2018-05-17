@@ -2,7 +2,7 @@ package com.snapswap.jumio
 
 import com.snapswap.jumio.model.EnumJumioDocTypes
 import com.snapswap.jumio.model.init.{JumioMdNetverifyInitResponse, JumioNetverifyInitResponse}
-import com.snapswap.jumio.model.netverify.PerformNetverifyResponse
+import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, PerformNetverifyResponse}
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
 
 import scala.concurrent.Future
@@ -29,4 +29,6 @@ trait NetverifyClient {
                        idFront: JumioImageRawData,
                        idBack: Option[JumioImageRawData],
                        callbackUrl: String): Future[PerformNetverifyResponse]
+
+  def listAcceptedIdDocs(): Future[AcceptedIdDocs]
 }

@@ -1,12 +1,15 @@
 package com.snapswap.jumio.json.protocol
 
 import com.snapswap.jumio.model
+import com.snapswap.jumio.model.EnumJumioDocTypes.JumioDocType
 import com.snapswap.jumio.model._
 import com.snapswap.jumio.model.errors.JumioMalformedResponse
 import com.snapswap.jumio.model.init.{JumioMdNetverifyInitParams, JumioMdNetverifyInitResponse, JumioNetverifyInitParams, JumioNetverifyInitResponse}
-import com.snapswap.jumio.model.netverify.{JumioRejectReason, JumioRejection, PerformNetverifyRequest, PerformNetverifyResponse}
+import com.snapswap.jumio.model.netverify._
 import com.snapswap.jumio.model.retrieval._
 import spray.json._
+
+import scala.util.{Failure, Success, Try}
 
 
 trait JumioUnmarshaller
@@ -15,7 +18,7 @@ trait JumioUnmarshaller
     with JumioEnumsUnmarshaller
     with JumioAddressUnmarshaller {
 
-  private implicit class JsonLifter(json: JsValue){
+  private implicit class JsonLifter(json: JsValue) {
     def convertWithNullCheck[T](implicit reader: JsonReader[T]): Option[T] = json match {
       case JsNull =>
         None
@@ -194,6 +197,23 @@ trait JumioUnmarshaller
     "jumioIdScanReference",
     "timestamp"
   )
+
+  implicit object AcceptedIdDocsReader extends RootJsonReader[AcceptedIdDocs] {
+    override def read(json: JsValue): AcceptedIdDocs = Try {
+      json.asJsObject.fields("acceptedIdTypes").convertTo[Seq[JsObject]].map { i =>
+        i.fields("countryCode").convertTo[String] -> i.fields("idTypes").convertTo[Seq[JsObject]].map { d =>
+          d.fields("idType").convertTo[JumioDocType] ->
+            d.fields("acquisitionConfig").asJsObject.fields("backSide").convertTo[Boolean]
+        }
+      }
+    } match {
+      case Success(a) =>
+        a.toMap
+      case Failure(ex) =>
+        deserializationError(s"can't unmarshall into AcceptedIdDocs, json:\n${json.prettyPrint}\n", ex)
+    }
+  }
+
 }
 
 object JumioUnmarshaller extends JumioUnmarshaller

@@ -16,7 +16,7 @@ import com.snapswap.jumio._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
 import com.snapswap.jumio.model._
 import com.snapswap.jumio.model.init.{JumioMdNetverifyInitParams, JumioMdNetverifyInitResponse, JumioNetverifyInitParams, JumioNetverifyInitResponse}
-import com.snapswap.jumio.model.netverify.{PerformNetverifyRequest, PerformNetverifyResponse}
+import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, PerformNetverifyRequest, PerformNetverifyResponse}
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
 import spray.json._
 
@@ -52,6 +52,16 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
   private val client: HttpClient = HttpClient(connection, 5000, OverflowStrategy.dropNew)
   private val mdClient: HttpClient = HttpClient(mdConnection, 5000, OverflowStrategy.dropNew)
 
+
+  override def listAcceptedIdDocs(): Future[AcceptedIdDocs] =
+    get("/acceptedIdTypes", isMd = false)(j => j.convertTo[AcceptedIdDocs])
+
+
+  private def get[T](path: String, isMd: Boolean)
+                    (parser: JsValue => T): Future[T] = {
+    val url = baseURL + path
+    requestForJson(Get(url), if (isMd) mdClient else client)(parser)
+  }
 
   private def post[T](path: String, data: JsValue, isMd: Boolean)(parser: JsValue => T): Future[T] = {
     val request =

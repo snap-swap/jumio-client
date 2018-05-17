@@ -4,7 +4,7 @@ import java.time.{LocalDate, ZoneOffset}
 
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller
 import com.snapswap.jumio.model._
-import com.snapswap.jumio.model.netverify.{JumioRejectReason, JumioRejection}
+import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, JumioRejectReason, JumioRejection}
 import com.snapswap.jumio.model.retrieval.{JumioImage, JumioImagesInfo, JumioScan}
 import org.scalatest._
 import spray.json._
@@ -12,6 +12,14 @@ import spray.json._
 class UnmarshallerSpec extends WordSpecLike with Matchers with JumioUnmarshaller {
 
   "Unmarshaller" should {
+    "parse acceptedIdTypes response" in {
+      import EnumJumioDocTypes._
+      val result = acceptedIdDocs.parseJson.convertTo[AcceptedIdDocs]
+      result shouldBe Map(
+        "HRV" -> Seq(id_card -> true, driving_license -> true, passport -> false),
+        "MOZ" -> Seq(passport -> false)
+      )
+    }
     "parse details of PENDING scan " in {
       val result = pendingScan.parseJson.convertTo[JumioScan]
       result.transaction.status shouldBe EnumJumioTxStatuses.pending
@@ -180,5 +188,48 @@ class UnmarshallerSpec extends WordSpecLike with Matchers with JumioUnmarshaller
       |    "status": "DONE",
       |    "merchantScanReference": "DF5AF751-7AAA-45B9-A62D-9B1D5271A59B"
       |  }
+      |}""".stripMargin
+
+  val acceptedIdDocs =
+    """{
+      |    "timestamp": "2018-05-16T11:03:05.748Z",
+      |    "acceptedIdTypes": [
+      |        {
+      |            "countryCode": "HRV",
+      |            "countryName": "Croatia",
+      |            "idTypes": [
+      |                {
+      |                    "acquisitionConfig": {
+      |                        "backSide": true
+      |                    },
+      |                    "idType": "ID_CARD"
+      |                },
+      |                {
+      |                    "acquisitionConfig": {
+      |                        "backSide": true
+      |                    },
+      |                    "idType": "DRIVING_LICENSE"
+      |                },
+      |                {
+      |                    "acquisitionConfig": {
+      |                        "backSide": false
+      |                    },
+      |                    "idType": "PASSPORT"
+      |                }
+      |            ]
+      |        },
+      |        {
+      |            "countryCode": "MOZ",
+      |            "countryName": "Mozambique",
+      |            "idTypes": [
+      |                {
+      |                    "acquisitionConfig": {
+      |                        "backSide": false
+      |                    },
+      |                    "idType": "PASSPORT"
+      |                }
+      |            ]
+      |        }
+      |    ]
       |}""".stripMargin
 }
