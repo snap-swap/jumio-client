@@ -121,7 +121,13 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
         idBack.map(_.contentType.mediaType.toString),
         country,
         idType.toString,
-        callbackUrl
+        callbackUrl,
+        face match {
+          case Some(_) =>
+            "idNumber,idFirstName,idLastName,idDob,idExpiry,idUsState,idPersonalNumber,idFaceMatch,idAddress"
+          case None =>
+            "idNumber,idFirstName,idLastName,idDob,idExpiry,idUsState,idPersonalNumber,idAddress"
+        }
       )
       result <- post("/performNetverify", params.toJson, isMd = false) { response =>
         response.convertTo[PerformNetverifyResponse]

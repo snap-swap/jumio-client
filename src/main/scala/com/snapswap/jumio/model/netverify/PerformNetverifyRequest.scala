@@ -10,5 +10,4 @@ case class PerformNetverifyRequest(merchantIdScanReference: String,
                                    country: String,
                                    idType: String,
                                    callbackUrl: String,
-                                   enabledFields: String = "idNumber,idFirstName,idLastName,idDob,idExpiry,idUsState,idPersonalNumber,idFaceMatch,idAddress"
-                                  )
+                                   enabledFields: String)
