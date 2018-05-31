@@ -10,4 +10,6 @@ case class PerformNetverifyRequest(merchantIdScanReference: String,
                                    country: String,
                                    idType: String,
                                    callbackUrl: String,
-                                   enabledFields: String)
+                                   enabledFields: String,
+                                   customerId: Option[String],
+                                   clientIp: Option[String])

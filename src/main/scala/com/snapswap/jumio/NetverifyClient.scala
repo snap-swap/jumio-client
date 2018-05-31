@@ -28,7 +28,9 @@ trait NetverifyClient {
                        idType: EnumJumioDocTypes.JumioDocType,
                        idFront: JumioImageRawData,
                        idBack: Option[JumioImageRawData],
-                       callbackUrl: String): Future[PerformNetverifyResponse]
+                       callbackUrl: String,
+                       customerId: Option[String],
+                       clientIp: Option[String]): Future[PerformNetverifyResponse]
 
   def listAcceptedIdDocs(): Future[AcceptedIdDocs]
 }

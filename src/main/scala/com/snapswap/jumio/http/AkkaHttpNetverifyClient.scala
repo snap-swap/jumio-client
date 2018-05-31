@@ -102,7 +102,9 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
                                 idType: EnumJumioDocTypes.JumioDocType,
                                 idFront: JumioImageRawData,
                                 idBack: Option[JumioImageRawData],
-                                callbackUrl: String): Future[PerformNetverifyResponse] = {
+                                callbackUrl: String,
+                                customerId: Option[String],
+                                clientIp: Option[String]): Future[PerformNetverifyResponse] = {
     for {
       faceString: Option[String] <- face.map(f => {
         encode(f.data).map(Some(_))
@@ -127,7 +129,9 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
             "idNumber,idFirstName,idLastName,idDob,idExpiry,idUsState,idPersonalNumber,idFaceMatch,idAddress"
           case None =>
             "idNumber,idFirstName,idLastName,idDob,idExpiry,idUsState,idPersonalNumber,idAddress"
-        }
+        },
+        customerId,
+        clientIp
       )
       result <- post("/performNetverify", params.toJson, isMd = false) { response =>
         response.convertTo[PerformNetverifyResponse]

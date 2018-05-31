@@ -61,7 +61,9 @@ object PerformNetverifyUsageExample extends App {
     idBack = Some(JumioImageRawData(
       fileReader(back),
       ContentType(MediaTypes.`image/jpeg`)
-    ))
+    )),
+    customerId = None,
+    clientIp = None
   ).flatMap { result =>
     log.info(s"\n\n$result\n\n")
     system.terminate()

@@ -190,7 +190,9 @@ trait JumioUnmarshaller
     "country",
     "idType",
     "callbackUrl",
-    "enabledFields"
+    "enabledFields",
+    "customerId",
+    "clientIp"
   )
 
   implicit val performNetverifyResponseFormat = jsonFormat(PerformNetverifyResponse,
