@@ -114,26 +114,28 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
       idFrontString <- encode(idFront.data)
       idBackString: Option[String] <- idBack.map(_.data).map(encode).map(_.map(Some(_))).getOrElse(Future.successful(None))
       params = PerformNetverifyRequest(
-        merchantIdScanReference,
-        faceString,
-        face.map(_.contentType.mediaType.toString),
-        idFrontString,
-        idFront.contentType.mediaType.toString,
-        idBackString,
-        idBack.map(_.contentType.mediaType.toString),
-        country,
-        idType.toString,
-        callbackUrl,
-        face match {
+        merchantIdScanReference = merchantIdScanReference,
+        faceImage = faceString,
+        faceImageMimeType = face.map(_.contentType.mediaType.toString),
+        frontsideImage = idFrontString,
+        frontsideImageMimeType = idFront.contentType.mediaType.toString,
+        backsideImage = idBackString,
+        backsideImageMimeType = idBack.map(_.contentType.mediaType.toString),
+        country = country,
+        idType = idType.toString,
+        callbackUrl = callbackUrl,
+        enabledFields = face match {
           case Some(_) =>
             "idNumber,idFirstName,idLastName,idDob,idExpiry,idUsState,idPersonalNumber,idFaceMatch,idAddress"
           case None =>
             "idNumber,idFirstName,idLastName,idDob,idExpiry,idUsState,idPersonalNumber,idAddress"
         },
-        customerId,
-        clientIp
+        customerId = customerId,
+        clientIp = clientIp
       )
-      result <- post("/performNetverify", params.toJson, isMd = false) { response =>
+      paramsJson = params.toJson
+      _ = log.debug("Use 'performNetverify' with parameters: " + paramsJson.compactPrint)
+      result <- post("/performNetverify", paramsJson, isMd = false) { response =>
         response.convertTo[PerformNetverifyResponse]
       }
     } yield result
