@@ -173,11 +173,29 @@ trait JumioUnmarshaller
     }
   }
 
-  implicit val jumioImagesInfoFormat = jsonFormat(JumioImagesInfo,
-    "timestamp",
-    "scanReference",
-    "images"
-  )
+  implicit val jumioImagesReader = new RootJsonFormat[JumioImagesInfo] {
+    override def read(json: JsValue): JumioImagesInfo = {
+      json match {
+        case obj: JsObject =>
+          (obj.fields.get("timestamp"), obj.fields.get("scanReference"), obj.fields.get("images")) match {
+            case (Some(timestamp), Some(scanReference), Some(images)) =>
+              val imagesSeq: Seq[JumioImage] = images match {
+                case arr: JsArray => arr.convertTo[Seq[JumioImage]]
+                case img: JsObject => Seq(img.convertTo[JumioImage])
+                case x => deserializationError(s"Expected 'images' as either JsArray or JsObject but found $obj")
+              }
+              JumioImagesInfo(timestamp.convertTo[String], scanReference.convertTo[String], imagesSeq)
+            case _ => deserializationError(s"Expected JumioImagesInfo as JsObject with 'timestamp', 'scanReference', and 'images' but found $obj")
+          }
+        case x => deserializationError(s"Expected JumioImagesInfo as JsObject but found $x")
+      }
+    }
+    override def write(obj: JumioImagesInfo): JsValue = JsObject(Map(
+      "timestamp" -> JsString(obj.timestamp),
+      "scanReference" -> JsString(obj.scanReference),
+      "images" -> obj.images.toJson
+    ))
+  }
 
   implicit val performNetverifyRequestFormat = jsonFormat(PerformNetverifyRequest,
     "merchantIdScanReference",
