@@ -1,8 +1,7 @@
 package com.snapswap.jumio.http
 
-
 import java.util.Base64
-
+import scala.concurrent.{ExecutionContext, Future}
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.client.RequestBuilding._
@@ -10,6 +9,7 @@ import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.ByteString
+import spray.json._
 import com.snapswap.http.client.HttpClient
 import com.snapswap.http.client.HttpConnection._
 import com.snapswap.jumio._
@@ -18,10 +18,6 @@ import com.snapswap.jumio.model._
 import com.snapswap.jumio.model.init.{JumioMdNetverifyInitParams, JumioMdNetverifyInitResponse, JumioNetverifyInitParams, JumioNetverifyInitResponse}
 import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, PerformNetverifyRequest, PerformNetverifyResponse}
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
-import spray.json._
-
-import scala.concurrent.{ExecutionContext, Future}
-
 
 class AkkaHttpNetverifyClient(override val clientToken: String,
                               override val clientSecret: String,
@@ -133,9 +129,8 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
         customerId = customerId,
         clientIp = clientIp
       )
-      paramsJson = params.toJson
-      _ = log.debug("Use 'performNetverify' with parameters: " + paramsJson.compactPrint)
-      result <- post("/performNetverify", paramsJson, isMd = false) { response =>
+      _ = log.debug(s"Use 'performNetverify' with parameters: $params")
+      result <- post("/performNetverify", params.toJson, isMd = false) { response =>
         response.convertTo[PerformNetverifyResponse]
       }
     } yield result
