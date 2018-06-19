@@ -3,6 +3,7 @@ package com.snapswap.jumio.http
 
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.stream.scaladsl.Source
 import akka.stream.{Materializer, OverflowStrategy}
@@ -33,20 +34,20 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
   override val log = Logging(system, this.getClass)
   private val baseURL = s"/api/netverify/v2"
 
-  private val connection: Connection = httpsPool(apiHost, 443,
+  private val connection: Connection[HostConnectionPool] = httpsPool(apiHost, 443,
     defaultClientHttpsContext,
     defaultConnectionPoolSettings.withMaxRetries(maxRetries),
     systemLogging
   ).log("jumio netverify retrieval")
 
-  private val mdConnection: Connection = httpsPool(s"retrieval.$apiHost", 443,
+  private val mdConnection: Connection[HostConnectionPool] = httpsPool(s"retrieval.$apiHost", 443,
     defaultClientHttpsContext,
     defaultConnectionPoolSettings.withMaxRetries(maxRetries),
     systemLogging
   ).log("jumio multi document retrieval")
 
-  private val client: HttpClient = HttpClient(connection, 5000, OverflowStrategy.dropNew)
-  private val mdClient: HttpClient = HttpClient(mdConnection, 5000, OverflowStrategy.dropNew)
+  private val client: HttpClient[HostConnectionPool] = HttpClient(connection, 5000, OverflowStrategy.dropNew)
+  private val mdClient: HttpClient[HostConnectionPool] = HttpClient(mdConnection, 5000, OverflowStrategy.dropNew)
 
 
   private def parameters[T](query: Map[String, String]): String =

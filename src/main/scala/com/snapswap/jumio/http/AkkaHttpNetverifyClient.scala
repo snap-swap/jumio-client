@@ -1,9 +1,11 @@
 package com.snapswap.jumio.http
 
 import java.util.Base64
+
 import scala.concurrent.{ExecutionContext, Future}
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
@@ -33,20 +35,22 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
   override val log = Logging(system, this.getClass)
   private val baseURL = s"/api/netverify/v2"
 
-  private val connection: Connection = httpsPool(apiHost, 443,
+  //FIXME: Rewrite to use superPool HERE
+  private val connection: Connection[HostConnectionPool] = httpsPool(apiHost, 443,
     defaultClientHttpsContext,
     defaultConnectionPoolSettings.withMaxRetries(maxRetries),
     systemLogging
   ).log("jumio")
 
-  private val mdConnection: Connection = httpsPool(s"upload.$apiHost", 443,
+  //FIXME: Rewrite to use superPool HERE
+  private val mdConnection: Connection[HostConnectionPool] = httpsPool(s"upload.$apiHost", 443,
     defaultClientHttpsContext,
     defaultConnectionPoolSettings.withMaxRetries(maxRetries),
     systemLogging
   ).log("jumio multi document")
 
-  private val client: HttpClient = HttpClient(connection, 5000, OverflowStrategy.dropNew)
-  private val mdClient: HttpClient = HttpClient(mdConnection, 5000, OverflowStrategy.dropNew)
+  private val client: HttpClient[HostConnectionPool] = HttpClient(connection, 5000, OverflowStrategy.dropNew)
+  private val mdClient: HttpClient[HostConnectionPool] = HttpClient(mdConnection, 5000, OverflowStrategy.dropNew)
 
 
   override def listAcceptedIdDocs(): Future[AcceptedIdDocs] =

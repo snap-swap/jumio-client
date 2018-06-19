@@ -1,5 +1,6 @@
 package com.snapswap.jumio.http
 
+import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.stream.scaladsl.Source
 import com.snapswap.http.client.HttpClient
@@ -14,7 +15,7 @@ trait JumioHttpImageClient {
     collection.immutable.Seq(seq).flatten
 
   final def getImages(img: Seq[JumioImage],
-                      client: HttpClient): Source[(JumioImageRawData, JumioImage), Any] = {
+                      client: HttpClient[HostConnectionPool]): Source[(JumioImageRawData, JumioImage), Any] = {
     client.send(
       Source(img.map { i =>
         Get(i.href).withHeaders(authHeaders) -> i

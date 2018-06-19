@@ -2,6 +2,7 @@ package com.snapswap.jumio.http
 
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
+import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, Authorization, BasicHttpCredentials, `User-Agent`}
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -49,7 +50,7 @@ private[http] trait JumioHttpClient {
     Authorization(BasicHttpCredentials(clientToken, clientSecret))
   )
 
-  protected def send[T](request: HttpRequest, client: HttpClient)
+  protected def send[T](request: HttpRequest, client: HttpClient[HostConnectionPool])
                        (transform: ResponseEntity => Future[T]): Future[T] =
     client.send(request).recoverWith {
       case ex =>
@@ -74,7 +75,7 @@ private[http] trait JumioHttpClient {
       }
     }
 
-  protected def requestForJson[T](request: HttpRequest, client: HttpClient)(parse: JsValue => T): Future[T] =
+  protected def requestForJson[T](request: HttpRequest, client: HttpClient[HostConnectionPool])(parse: JsValue => T): Future[T] =
     send(request.withHeaders(authHeaders :+ Accept(MediaTypes.`application/json`)), client)(asJson)
       .map(v => parseJsValue(v, parse))
 
