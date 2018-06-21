@@ -111,6 +111,8 @@ trait JumioUnmarshaller
   )
 
   implicit object jumioExtractedDataReader extends JumioJsonReader[JumioExtractedData] {
+    import com.snapswap.jumio.utils.OptionStringUtils._
+
     override def read(json: JsValue): JumioExtractedData = json match {
       case obj: JsObject =>
         val fields = obj.fields
@@ -122,7 +124,7 @@ trait JumioUnmarshaller
           fields.get("ssn").map(_.convertTo[String]),
           fields.get("signatureAvailable").map(_.convertTo[Boolean]),
           fields.get("accountNumber").map(_.convertTo[String]),
-          fields.get("issueDate").map(_.convertTo[String]),
+          fields.get("issueDate").map(_.convertTo[String]).toDateTime,
           fields.get("address").map(_.convertTo[JumioAddress])
         )
       case x => deserializationError("Expected address as object, but got " + x)
@@ -133,6 +135,7 @@ trait JumioUnmarshaller
     "type",
     "subType",
     "issuingCountry",
+    "issueDate",
     "firstName",
     "lastName",
     "dob",
@@ -190,6 +193,7 @@ trait JumioUnmarshaller
         case x => deserializationError(s"Expected JumioImagesInfo as JsObject but found $x")
       }
     }
+
     override def write(obj: JumioImagesInfo): JsValue = JsObject(Map(
       "timestamp" -> JsString(obj.timestamp),
       "scanReference" -> JsString(obj.scanReference),

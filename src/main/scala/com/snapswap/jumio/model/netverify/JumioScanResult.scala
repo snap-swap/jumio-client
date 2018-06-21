@@ -3,7 +3,7 @@ package com.snapswap.jumio.model.netverify
 import java.time.ZonedDateTime
 
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller
-import com.snapswap.jumio.model._
+import com.snapswap.jumio.model.{EnumJumioDocumentStatus, EnumJumioSources, _}
 import com.snapswap.jumio.utils.OptionStringUtils
 import spray.json._
 
@@ -38,31 +38,33 @@ object JumioScanResult extends JumioUnmarshaller {
 
   def of(parameters: Map[String, String]): JumioScanResult = {
 
-    def scanReference = parameters.get("jumioIdScanReference").getOrUnknown
+    def scanReference: String = parameters.get("jumioIdScanReference").getOrUnknown
 
-    def status = parameters.get("verificationStatus")
+    def status: EnumJumioDocumentStatus.Value = parameters.get("verificationStatus")
       .map(EnumJumioDocumentStatus.withName)
       .getOrElse(EnumJumioDocumentStatus.UNKNOWN)
 
-    def source = parameters.get("idScanSource")
+    def source: EnumJumioSources.Value = parameters.get("idScanSource")
       .map(EnumJumioSources.withName)
       .getOrElse(EnumJumioSources.unknown)
 
-    def checks = JumioChecks.of(parameters)
+    def checks: JumioChecks = JumioChecks.of(parameters)
 
-    def timestamp = parameters.get("transactionDate").toDateTime
+    def timestamp: Option[ZonedDateTime] = parameters.get("transactionDate").toDateTime
 
-    def callbackTimestamp = parameters.get("callbackDate").toDateTime
+    def callbackTimestamp: Option[ZonedDateTime] = parameters.get("callbackDate").toDateTime
 
-    def merchantIdScanReference = parameters.get("merchantIdScanReference").getOrUnknown
+    def merchantIdScanReference: String = parameters.get("merchantIdScanReference").getOrUnknown
 
-    def customerId = parameters.get("customerId")
+    def customerId: Option[String] = parameters.get("customerId")
 
-    def clientIp = parameters.get("clientIp")
+    def clientIp: Option[String] = parameters.get("clientIp")
 
-    def additionalInformation = parameters.get("additionalInformation").getOrUnknown
+    def issuingDate: Option[ZonedDateTime] = parameters.get("issuingDate").toDate
 
-    def rejectReason = {
+    def additionalInformation: String = parameters.get("additionalInformation").getOrUnknown
+
+    def rejectReason: JumioRejectReason = {
       parameters.get("rejectReason").map(_.parseJson.convertTo[JumioRejectReason])
         .getOrElse(JumioRejectReason("UNKNOWN", "UNKNOWN", Seq.empty))
     }
@@ -75,7 +77,7 @@ object JumioScanResult extends JumioUnmarshaller {
         checks,
         timestamp,
         callbackTimestamp,
-        JumioDocument.of(parameters),
+        JumioDocument.of(parameters, issuingDate),
         merchantIdScanReference,
         customerId,
         clientIp,

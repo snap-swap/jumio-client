@@ -1,6 +1,6 @@
 package com.snapswap.jumio.model
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
@@ -10,6 +10,7 @@ import spray.json._
 case class JumioDocument(`type`: Option[EnumJumioDocTypes.JumioDocType],
                          subType: Option[String],
                          issuingCountry: Option[String],
+                         issueDate: Option[ZonedDateTime],
                          givenName: Option[String],
                          familyName: Option[String],
                          dob: Option[String],
@@ -41,7 +42,7 @@ case class JumioDocument(`type`: Option[EnumJumioDocTypes.JumioDocType],
 }
 
 object JumioDocument {
-  def of(parameters: Map[String, String]): JumioDocument = {
+  def of(parameters: Map[String, String], idIssueDate: Option[ZonedDateTime]): JumioDocument = {
     def idType = parameters.get("idType").map(EnumJumioDocTypes.withName)
 
     def idSubtype = parameters.get("idSubtype")
@@ -74,6 +75,7 @@ object JumioDocument {
       idType,
       idSubtype,
       idCountry,
+      idIssueDate,
       idFirstName,
       idLastName,
       idDob,
