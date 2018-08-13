@@ -1,7 +1,7 @@
 package com.snapswap.jumio.json.protocol
 
-import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.format.{DateTimeFormatter, DateTimeParseException}
+import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, RootJsonFormat, deserializationError}
 
@@ -15,9 +15,9 @@ trait JumioDefaultUnmarshaller extends {
 
     override def read(json: JsValue): LocalDate = json match {
       case JsString(str) =>
-        Try(ZonedDateTime.parse(str, formatter)) match {
+        Try(LocalDate.parse(str, formatter)) match {
           case Success(dt) =>
-            dt.toLocalDate
+            dt
           case Failure(ex) =>
             deserializationError(s"Expected Date as JsString in '${formatter.toString}' format, but got '$str'", ex)
         }
@@ -32,10 +32,15 @@ trait JumioDefaultUnmarshaller extends {
 
   implicit object DateTimeJsonFormat extends RootJsonFormat[ZonedDateTime] {
     private val formatter = DateTimeFormatter.ISO_ZONED_DATE_TIME
+    private val dateFormatter = DateTimeFormatter.ISO_DATE
 
     override def read(json: JsValue): ZonedDateTime = json match {
       case JsString(str) =>
-        Try(ZonedDateTime.parse(str, formatter)) match {
+        Try(ZonedDateTime.parse(str, formatter))
+          .recoverWith {
+            case _: DateTimeParseException =>
+              Try(LocalDate.parse(str, dateFormatter)).map(_.atStartOfDay(ZoneOffset.UTC))
+          } match {
           case Success(dt) =>
             dt
           case Failure(ex) =>

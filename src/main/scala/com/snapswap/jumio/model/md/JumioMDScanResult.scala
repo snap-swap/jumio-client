@@ -36,7 +36,7 @@ object JumioMDScanResult extends JumioUnmarshaller {
     parseJumioTx(parameters) match {
       case Some(JumioTx(status, source, _, _, _, _, Some(merchantScanReference), _)) if status == EnumJumioTxStatuses.done =>
         parseDocument(parameters) match {
-          case Some(JumioDocument(docType, _, _, _, _, _, _, _, _, _, _, _, _, extractedData, Some(docStatus)))
+          case Some(JumioDocument(docType, _, _, _, _, _, _, _, _, _, _, _, _, extractedData, Some(docStatus), _))
             if docStatus == EnumJumioDocumentStatus.EXTRACTED || docStatus == EnumJumioDocumentStatus.UPLOADED =>
             JumioMDScanSuccess(
               docType = docType.getOrElse(throw new RuntimeException(s"document type must be in provided")),
@@ -53,7 +53,7 @@ object JumioMDScanResult extends JumioUnmarshaller {
               address = extractedData.flatMap(_.address),
               rawData = parameters
             )
-          case Some(JumioDocument(_, _, _, _, _, _, _, _, _, _,_, _, _, _, Some(docStatus)))
+          case Some(JumioDocument(_, _, _, _, _, _, _, _, _, _,_, _, _, _, Some(docStatus), _))
             if docStatus == EnumJumioDocumentStatus.DISCARDED =>
             JumioMDScanFailure(
               merchantScanReference = merchantScanReference,

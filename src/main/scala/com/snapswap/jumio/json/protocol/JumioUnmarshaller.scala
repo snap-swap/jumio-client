@@ -18,6 +18,17 @@ trait JumioUnmarshaller
     with JumioEnumsUnmarshaller
     with JumioAddressUnmarshaller {
 
+  protected def enumNameFormat(enum: Enumeration): RootJsonFormat[enum.Value] = new RootJsonFormat[enum.Value] {
+    def write(v: enum.Value): JsValue =
+      JsString(v.toString.replace("$minus", "-"))
+
+    def read(value: JsValue): enum.Value = value match {
+      case JsString(s) => enum.withName(s)
+      case JsNumber(n) => enum.withName(n.toString())
+      case x => deserializationError(s"Expected $enum as JsString, but got $x")
+    }
+  }
+
   private implicit class JsonLifter(json: JsValue) {
     def convertWithNullCheck[T](implicit reader: JsonReader[T]): Option[T] = json match {
       case JsNull =>
@@ -131,6 +142,10 @@ trait JumioUnmarshaller
     }
   }
 
+  implicit val JumioGenderEnumReader = enumNameFormat(JumioGenderEnum)
+
+  implicit val MrzDataReader = jsonFormat(JumioMrzData, "data")
+
   implicit val jumioDocumentReader = jsonFormat(JumioDocument.apply,
     "type",
     "subType",
@@ -146,7 +161,8 @@ trait JumioUnmarshaller
     "personalNumber",
     "address",
     "extractedData",
-    "status"
+    "status",
+    "mrz"
   )
   implicit val jumioScanReader = jsonFormat5(JumioScan)
 

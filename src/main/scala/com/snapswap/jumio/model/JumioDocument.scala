@@ -1,9 +1,11 @@
 package com.snapswap.jumio.model
 
-import java.time.{LocalDate, ZonedDateTime}
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, ZonedDateTime}
 
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
+import com.snapswap.jumio.model.EnumJumioDocumentStatus.JumioDocumentStatus
+import com.snapswap.jumio.model.JumioGenderEnum.Gender
 import spray.json._
 
 
@@ -13,63 +15,72 @@ case class JumioDocument(`type`: Option[EnumJumioDocTypes.JumioDocType],
                          issueDate: Option[ZonedDateTime],
                          givenName: Option[String],
                          familyName: Option[String],
-                         dob: Option[String],
-                         expiry: Option[String],
+                         dob: Option[LocalDate],
+                         expiry: Option[LocalDate],
                          number: Option[String],
-                         gender: Option[String],
+                         gender: Option[JumioGenderEnum.Gender],
                          nationality: Option[String],
                          personalNumber: Option[String],
                          address: Option[JumioAddress],
                          extractedData: Option[JumioExtractedData],
-                         status: Option[EnumJumioDocumentStatus.JumioDocumentStatus]) {
+                         status: Option[EnumJumioDocumentStatus.JumioDocumentStatus],
+                         mrz: Option[JumioMrzData]) {
   override def toString: String = `type` match {
     case None => "N/A"
     case Some(t) =>
       (issuingCountry.map(v => s"$v ") :: Some(t.toString) ::
         subType.map(v => s"($v)") ::
         familyName.map(surname => " of '" + givenName.getOrElse("") + s"' '$surname'") ::
-        dob.map(v => s", born '$v'") ::
+        dob.map(v => s", born '${v.format(JumioDocument.fomatter)}'") ::
         address.map(v => s" resident of '$v'") ::
         number.map(v => s", '$v' number") ::
         personalNumber.map(v => s", '$v' personal number") ::
         gender.map(v => s", '$v' gender") ::
         nationality.map(v => s", '$v' nationality") ::
-        expiry.map(v => s", expiry at '$v'") :: Nil).flatten.mkString
+        expiry.map(v => s", expiry at '${v.format(JumioDocument.fomatter)}'") ::
+        mrz.map(m => s" , $m") ::
+        Nil).flatten.mkString
   }
-
-  val birthdate: Option[LocalDate] = dob.map(JumioDocument.localDate)
-  val expireAt: Option[LocalDate] = expiry.map(JumioDocument.localDate)
 }
 
 object JumioDocument {
   def of(parameters: Map[String, String], idIssueDate: Option[ZonedDateTime]): JumioDocument = {
-    def idType = parameters.get("idType").map(EnumJumioDocTypes.withName)
+    def idType: Option[EnumJumioDocTypes.Value] = parameters.get("idType").map(EnumJumioDocTypes.withName)
 
-    def idSubtype = parameters.get("idSubtype")
+    def idSubtype: Option[String] = parameters.get("idSubtype")
 
-    def idCountry = parameters.get("idCountry")
+    def idCountry: Option[String] = parameters.get("idCountry")
 
-    def idNumber = parameters.get("idNumber")
+    def idNumber: Option[String] = parameters.get("idNumber")
 
-    def idFirstName = parameters.get("idFirstName")
+    def idFirstName: Option[String] = parameters.get("idFirstName")
 
-    def idLastName = parameters.get("idLastName")
+    def idLastName: Option[String] = parameters.get("idLastName")
 
-    def idDob = parameters.get("idDob")
+    def idDob: Option[LocalDate] = parameters.get("idDob").map(localDate)
 
-    def idExpiry = parameters.get("idExpiry")
+    def idExpiry: Option[LocalDate] = parameters.get("idExpiry").map(localDate)
 
-    def personalNumber = parameters.get("personalNumber")
+    def personalNumber: Option[String] = parameters.get("personalNumber")
 
-    def idAddress = parameters.get("idAddress").map(_.parseJson.convertTo[JumioAddress])
+    def idAddress: Option[JumioAddress] = parameters.get("idAddress").map(_.parseJson.convertTo[JumioAddress])
 
-    def extractedData = parameters.get("extractedData").map(_.parseJson.convertTo[JumioExtractedData])
+    def extractedData: Option[JumioExtractedData] = parameters.get("extractedData").map(_.parseJson.convertTo[JumioExtractedData])
 
-    def status = parameters.get("status").map(_.parseJson.convertTo[EnumJumioDocumentStatus.JumioDocumentStatus])
+    def status: Option[JumioDocumentStatus] = parameters.get("status").map(EnumJumioDocumentStatus.withName)
 
-    def gender = parameters.get("gender")
+    def gender: Option[Gender] = parameters.get("gender").map(JumioGenderEnum.parse)
 
-    def nationality = parameters.get("nationality")
+    def nationality: Option[String] = parameters.get("nationality")
+
+    def mrz: Option[JumioMrzData] = {
+      val data = Seq(parameters.get("optionalData1"), parameters.get("optionalData2")).flatten
+      if (data.isEmpty) {
+        None
+      } else {
+        Some(JumioMrzData(data))
+      }
+    }
 
     JumioDocument(
       idType,
@@ -86,11 +97,12 @@ object JumioDocument {
       personalNumber,
       idAddress,
       extractedData,
-      status
+      status,
+      mrz
     )
   }
 
-  private val fomatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+  private[model] val fomatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-  protected def localDate(`yyyy-MM-dd`: String): LocalDate = LocalDate.parse(`yyyy-MM-dd`, fomatter)
+  private[model] def localDate(`yyyy-MM-dd`: String): LocalDate = LocalDate.parse(`yyyy-MM-dd`, fomatter)
 }
