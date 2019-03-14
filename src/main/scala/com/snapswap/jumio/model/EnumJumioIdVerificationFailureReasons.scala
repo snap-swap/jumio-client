@@ -12,6 +12,7 @@ object EnumJumioIdVerificationFailureReasons extends Enumeration {
   val NO_FACE_PRESENT = Value("NO_FACE_PRESENT")
   val FACE_NOT_FULLY_VISIBLE = Value("FACE_NOT_FULLY_VISIBLE")
   val BAD_QUALITY = Value("BAD_QUALITY")
+  val LIVENESS_FAILED = Value("LIVENESS_FAILED")
 }
 
 

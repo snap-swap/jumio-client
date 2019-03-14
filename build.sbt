@@ -2,7 +2,7 @@ name := "jumio-client"
 
 organization := "com.snapswap"
 
-version := "1.0.47"
+version := "1.0.48"
 
 scalaVersion := "2.11.11"
 
@@ -19,7 +19,7 @@ scalacOptions := Seq(
   "-Ywarn-dead-code",
   "-Ywarn-numeric-widen",
   "-Xfuture",
-  "-Ywarn-unused-import",
+//  "-Ywarn-unused-import",
   "-encoding",
   "UTF-8"
 )

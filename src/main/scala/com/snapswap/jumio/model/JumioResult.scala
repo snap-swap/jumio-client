@@ -10,4 +10,3 @@ trait JumioResult {
 
   def rawData: Map[String, String]
 }
-

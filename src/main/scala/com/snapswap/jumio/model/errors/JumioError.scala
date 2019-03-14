@@ -5,8 +5,8 @@ trait JumioError extends RuntimeException {
 
   def cause: Option[Throwable] = None
 
-  override def getMessage = details
+  override def getMessage: String = details
 
-  override def getCause = cause.orNull
+  override def getCause: Throwable = cause.orNull
 }
 

@@ -3,9 +3,12 @@ package com.snapswap.jumio.model.netverify
 import java.time.ZonedDateTime
 
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller
-import com.snapswap.jumio.model.{EnumJumioDocumentStatus, EnumJumioSources, _}
+import com.snapswap.jumio.model.errors.CallbackParsingError
+import com.snapswap.jumio.model.{EnumJumioDocumentStatus, EnumJumioSources, JumioRawResult, _}
 import com.snapswap.jumio.utils.OptionStringUtils
 import spray.json._
+
+import scala.util.{Failure, Success, Try}
 
 trait JumioScanResult extends JumioResult {
   override def scanReference: String
@@ -36,7 +39,10 @@ object JumioScanResult extends JumioUnmarshaller {
 
   import OptionStringUtils._
 
-  def of(parameters: Map[String, String]): JumioScanResult = {
+  def of(raw: JumioRawResult): JumioScanResult =
+    of(raw.rawData)
+
+  def of(parameters: Map[String, String]): JumioScanResult = Try {
 
     def scanReference: String = parameters.get("jumioIdScanReference").getOrUnknown
 
@@ -102,5 +108,10 @@ object JumioScanResult extends JumioUnmarshaller {
           rawData = parameters
         )
     }
+  } match {
+    case Success(value) =>
+      value
+    case Failure(exception) =>
+      throw CallbackParsingError("can't extract document data", exception)
   }
 }
