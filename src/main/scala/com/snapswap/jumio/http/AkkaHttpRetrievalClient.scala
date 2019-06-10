@@ -1,9 +1,9 @@
 package com.snapswap.jumio.http
 
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.stream.scaladsl.Source
 import akka.stream.{Materializer, OverflowStrategy}
@@ -32,22 +32,11 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
     with JumioHttpImageClient {
 
   override val log = Logging(system, this.getClass)
-  private val baseURL = s"/api/netverify/v2"
+  private val v3BaseURL = s"/api/netverify/v2"
+  private val mdApiHost = s"retrieval.$apiHost"
 
-  private val connection: Connection[HostConnectionPool] = httpsPool(apiHost, 443,
-    defaultClientHttpsContext,
-    defaultConnectionPoolSettings.withMaxRetries(maxRetries),
-    systemLogging
-  ).log("jumio netverify retrieval")
-
-  private val mdConnection: Connection[HostConnectionPool] = httpsPool(s"retrieval.$apiHost", 443,
-    defaultClientHttpsContext,
-    defaultConnectionPoolSettings.withMaxRetries(maxRetries),
-    systemLogging
-  ).log("jumio multi document retrieval")
-
-  private val client: HttpClient[HostConnectionPool] = HttpClient(connection, 5000, OverflowStrategy.dropNew)
-  private val mdClient: HttpClient[HostConnectionPool] = HttpClient(mdConnection, 5000, OverflowStrategy.dropNew)
+  private val connection: Connection[NotUsed] = superPool().log("jumio netverify retrieval")
+  private val client: HttpClient[NotUsed] = HttpClient(connection, 5000, OverflowStrategy.dropNew)
 
 
   private def parameters[T](query: Map[String, String]): String =
@@ -59,8 +48,8 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
 
   private def get[T](path: String, isMd: Boolean, query: Map[String, String] = Map())
                     (parser: JsValue => T): Future[T] = {
-    val url = baseURL + path + parameters(query)
-    requestForJson(Get(url), if (isMd) mdClient else client)(parser)
+    val request = Get(v3BaseURL + path + parameters(query))
+    requestForJson(request.withUri(request.uri.withHost(if (isMd) mdApiHost else apiHost).withScheme("https")), client)(parser)
   }
 
   override def scanStatus(scanReference: String): Future[JumioScanStatus] = {
@@ -92,9 +81,9 @@ class AkkaHttpRetrievalClient(override val clientToken: String,
     }
 
   override def obtainImage(images: Seq[JumioImage]): Source[(JumioImageRawData, JumioImage), Any] =
-    getImages(images, client)
+    getImages(images, apiHost, client)
 
   override def obtainMdImage(images: Seq[JumioImage]): Source[(JumioImageRawData, JumioImage), Any] =
-    getImages(images, mdClient)
+    getImages(images, mdApiHost, client)
 
 }

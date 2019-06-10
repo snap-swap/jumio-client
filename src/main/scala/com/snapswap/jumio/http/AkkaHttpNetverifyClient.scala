@@ -2,24 +2,25 @@ package com.snapswap.jumio.http
 
 import java.util.Base64
 
-import scala.concurrent.{ExecutionContext, Future}
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.scaladsl.Http.HostConnectionPool
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.ByteString
-import spray.json._
 import com.snapswap.http.client.HttpClient
 import com.snapswap.http.client.HttpConnection._
 import com.snapswap.jumio._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
 import com.snapswap.jumio.model._
-import com.snapswap.jumio.model.init.{JumioMdNetverifyInitParams, JumioMdNetverifyInitResponse, JumioNetverifyInitParams, JumioNetverifyInitResponse}
+import com.snapswap.jumio.model.init._
 import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, PerformNetverifyRequest, PerformNetverifyResponse}
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
+import spray.json._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 class AkkaHttpNetverifyClient(override val clientToken: String,
                               override val clientSecret: String,
@@ -33,52 +34,63 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
                               val materializer: Materializer) extends NetverifyClient with JumioHttpClient {
 
   override val log = Logging(system, this.getClass)
-  private val baseURL = s"/api/netverify/v2"
+  private val v3BaseURL = s"/api/netverify/v2"
+  private val v4BaseURL = s"/api/v4"
 
-  //FIXME: Rewrite to use superPool HERE
-  private val connection: Connection[HostConnectionPool] = httpsPool(apiHost, 443,
-    defaultClientHttpsContext,
-    defaultConnectionPoolSettings.withMaxRetries(maxRetries),
-    systemLogging
-  ).log("jumio")
+  private val connection: Connection[NotUsed] = superPool().log("jumio")
+  private val mdApiHost = s"upload.$apiHost"
 
-  //FIXME: Rewrite to use superPool HERE
-  private val mdConnection: Connection[HostConnectionPool] = httpsPool(s"upload.$apiHost", 443,
-    defaultClientHttpsContext,
-    defaultConnectionPoolSettings.withMaxRetries(maxRetries),
-    systemLogging
-  ).log("jumio multi document")
-
-  private val client: HttpClient[HostConnectionPool] = HttpClient(connection, 5000, OverflowStrategy.dropNew)
-  private val mdClient: HttpClient[HostConnectionPool] = HttpClient(mdConnection, 5000, OverflowStrategy.dropNew)
-
+  private val client: HttpClient[NotUsed] = HttpClient(connection, 5000, OverflowStrategy.dropNew)
 
   override def listAcceptedIdDocs(): Future[AcceptedIdDocs] =
-    get("/acceptedIdTypes", isMd = false)(j => j.convertTo[AcceptedIdDocs])
+    getV3("/acceptedIdTypes", isMd = false)(j => j.convertTo[AcceptedIdDocs])
 
 
-  private def get[T](path: String, isMd: Boolean)
-                    (parser: JsValue => T): Future[T] = {
-    val url = baseURL + path
-    requestForJson(Get(url), if (isMd) mdClient else client)(parser)
+  private def getV3[T](path: String, isMd: Boolean)
+                      (parser: JsValue => T): Future[T] = {
+    val request = Get(Uri(v3BaseURL + path).withHost(if (isMd) mdApiHost else apiHost).withScheme("https"))
+    requestForJson(request, client)(parser)
   }
 
-  private def post[T](path: String, data: JsValue, isMd: Boolean)(parser: JsValue => T): Future[T] = {
+  private def postV3[T](path: String, data: JsValue, isMd: Boolean)(parser: JsValue => T): Future[T] = {
     val request =
-      Post(baseURL + path)
-        .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.toString))
-
-    requestForJson(request, if (isMd) mdClient else client)(parser)
+      Post(Uri(v3BaseURL + path).withHost(if (isMd) mdApiHost else apiHost).withScheme("https"))
+        .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.compactPrint))
+    requestForJson(request, client)(parser)
   }
 
-  override def initNetverify(merchantScanReference: String,
-                             redirectUrl: String,
-                             callbackUrl: String,
-                             customerId: String): Future[JumioNetverifyInitResponse] = {
-    val params = JumioNetverifyInitParams(merchantScanReference, redirectUrl, redirectUrl, callbackUrl, customerId)
+  private def postV4[T](path: String, data: JsValue, isMd: Boolean)(parser: JsValue => T): Future[T] = {
+    val request =
+      Post(Uri(v4BaseURL + path).withHost(if (isMd) mdApiHost else apiHost).withScheme("https"))
+        .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.compactPrint))
+    requestForJson(request, client)(parser)
+  }
 
-    post("/initiateNetverify", params.toJson, isMd = false) { response =>
-      response.convertTo[JumioNetverifyInitResponse]
+  override def initNetverifyV3(merchantScanReference: String,
+                               redirectUrl: String,
+                               callbackUrl: String,
+                               customerId: String): Future[JumioNetverifyInitResponseV3] = {
+    val params = JumioNetverifyInitParamsV3(merchantScanReference, redirectUrl, redirectUrl, callbackUrl, customerId)
+
+    postV3("/initiateNetverify", params.toJson, isMd = false) { response =>
+      response.convertTo[JumioNetverifyInitResponseV3]
+    }
+  }
+
+  override def initNetverifyV4(merchantScanReference: String,
+                               redirectUrl: String,
+                               callbackUrl: String,
+                               customerId: String): Future[JumioNetverifyInitResponseV4] = {
+    val params = JumioNetverifyInitParamsV4(
+      customerInternalReference = merchantScanReference,
+      successUrl = redirectUrl,
+      errorUrl = redirectUrl,
+      callbackUrl = callbackUrl,
+      userReference = customerId
+    )
+
+    postV4("/initiate", params.toJson, isMd = false) { response =>
+      response.convertTo[JumioNetverifyInitResponseV4]
     }
   }
 
@@ -91,7 +103,7 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
     val params = JumioMdNetverifyInitParams(
       merchantScanReference, redirectUrl, redirectUrl, callbackUrl, customerId, country, docType
     )
-    post("/acquisitions", params.toJson, isMd = true) { response =>
+    postV3("/acquisitions", params.toJson, isMd = true) { response =>
       response.convertTo[JumioMdNetverifyInitResponse]
     }
   }
@@ -134,7 +146,7 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
         clientIp = clientIp
       )
       _ = log.debug(s"Use 'performNetverify' with parameters: $params")
-      result <- post("/performNetverify", params.toJson, isMd = false) { response =>
+      result <- postV3("/performNetverify", params.toJson, isMd = false) { response =>
         response.convertTo[PerformNetverifyResponse]
       }
     } yield result

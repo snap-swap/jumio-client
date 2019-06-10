@@ -1,7 +1,7 @@
 package com.snapswap.jumio
 
 import com.snapswap.jumio.model.EnumJumioDocTypes
-import com.snapswap.jumio.model.init.{JumioMdNetverifyInitResponse, JumioNetverifyInitResponse}
+import com.snapswap.jumio.model.init.{JumioMdNetverifyInitResponse, JumioNetverifyInitResponseV3, JumioNetverifyInitResponseV4}
 import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, PerformNetverifyResponse}
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
 
@@ -10,10 +10,15 @@ import scala.concurrent.Future
 
 trait NetverifyClient {
 
-  def initNetverify(merchantScanReference: String,
-                    redirectUrl: String,
-                    callbackUrl: String,
-                    customerId: String): Future[JumioNetverifyInitResponse]
+  def initNetverifyV3(merchantScanReference: String,
+                      redirectUrl: String,
+                      callbackUrl: String,
+                      customerId: String): Future[JumioNetverifyInitResponseV3]
+
+  def initNetverifyV4(merchantScanReference: String,
+                      redirectUrl: String,
+                      callbackUrl: String,
+                      customerId: String): Future[JumioNetverifyInitResponseV4]
 
   def initMdNetverify(merchantScanReference: String,
                       redirectUrl: String,

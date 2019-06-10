@@ -4,7 +4,7 @@ import com.snapswap.jumio.model
 import com.snapswap.jumio.model.EnumJumioDocTypes.JumioDocType
 import com.snapswap.jumio.model._
 import com.snapswap.jumio.model.errors.JumioMalformedResponse
-import com.snapswap.jumio.model.init.{JumioMdNetverifyInitParams, JumioMdNetverifyInitResponse, JumioNetverifyInitParams, JumioNetverifyInitResponse}
+import com.snapswap.jumio.model.init._
 import com.snapswap.jumio.model.netverify._
 import com.snapswap.jumio.model.retrieval._
 import spray.json._
@@ -108,11 +108,17 @@ trait JumioUnmarshaller
     }
   }
 
-  implicit val jumioNetverifyInitParamsFormat = jsonFormat(JumioNetverifyInitParams,
+  implicit val jumioNetverifyInitParamsV3Format = jsonFormat(JumioNetverifyInitParamsV3,
     "merchantIdScanReference", "successUrl", "errorUrl", "callbackUrl", "customerId"
   )
-  implicit val jumioNetverifyInitResponseFormat = jsonFormat(JumioNetverifyInitResponse,
+  implicit val jumioNetverifyInitParamsV4Format = jsonFormat(JumioNetverifyInitParamsV4,
+    "customerInternalReference", "successUrl", "errorUrl", "callbackUrl", "userReference"
+  )
+  implicit val jumioNetverifyInitResponseV3Format = jsonFormat(JumioNetverifyInitResponseV3,
     "authorizationToken", "jumioIdScanReference", "timestamp"
+  )
+  implicit val jumioNetverifyInitResponseV4Format = jsonFormat(JumioNetverifyInitResponseV4,
+  "transactionReference", "redirectUrl", "timestamp"
   )
   implicit val jumioMdNetverifyInitParamsFormat = jsonFormat(JumioMdNetverifyInitParams,
     "merchantScanReference", "successUrl", "errorUrl", "callbackUrl", "customerId", "country", "type"
@@ -122,6 +128,7 @@ trait JumioUnmarshaller
   )
 
   implicit object jumioExtractedDataReader extends JumioJsonReader[JumioExtractedData] {
+
     import com.snapswap.jumio.utils.OptionStringUtils._
 
     override def read(json: JsValue): JumioExtractedData = json match {
