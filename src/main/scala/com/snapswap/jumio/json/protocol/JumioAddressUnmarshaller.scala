@@ -46,7 +46,7 @@ trait JumioAddressUnmarshaller {
       city = city.getOrElse(""),
       postalCode = postalCode.getOrElse(""),
       streetAddress = Seq(
-        Some(streetName),
+        streetName,
         streetNumber.map(v => s" $v"),
         unitDetails.map(v => s", $v")
       ).flatten.mkString,
