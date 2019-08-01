@@ -24,7 +24,8 @@ case class JumioDocument(`type`: Option[EnumJumioDocTypes.JumioDocType],
                          address: Option[JumioAddress],
                          extractedData: Option[JumioExtractedData],
                          status: Option[EnumJumioDocumentStatus.JumioDocumentStatus],
-                         mrz: Option[JumioMrzData]) {
+                         mrz: Option[JumioMrzData],
+                         placeOfBirth: Option[String]) {
   override def toString: String = `type` match {
     case None => "N/A"
     case Some(t) =>
@@ -82,6 +83,8 @@ object JumioDocument {
       }
     }
 
+    def placeOfBirth: Option[String] = parameters.get("placeOfBirth")
+
     JumioDocument(
       idType,
       idSubtype,
@@ -98,7 +101,8 @@ object JumioDocument {
       idAddress,
       extractedData,
       status,
-      mrz
+      mrz,
+      placeOfBirth
     )
   }
 
