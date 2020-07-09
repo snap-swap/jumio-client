@@ -7,7 +7,7 @@ import akka.event.Logging
 import akka.http.scaladsl.model.MediaTypes
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-import com.snapswap.jumio.http.AkkaHttpRetrievalClient
+import com.snapswap.jumio.http.{AkkaHttpRetrievalClient, JumioRetrievalConnectionParams}
 import com.snapswap.jumio.model.retrieval.{JumioImage, JumioImageRawData, JumioImagesInfo}
 
 import scala.concurrent.Future
@@ -24,12 +24,15 @@ object RetrieveImageUsageExample extends App {
   val log = Logging(system, this.getClass)
 
   val client = new AkkaHttpRetrievalClient(
-    clientToken = "",
-    clientSecret = "",
     clientCompanyName = "snapswap",
     clientApplicationName = "remote-kyc",
-    clientVersion = "v1",
-    apiHost = "netverify.com"
+    clientVersion = "v1"
+  )
+
+  implicit val connectionParams = JumioRetrievalConnectionParams(
+    apiHost = "https://netverify.com",
+    token = "",
+    secret = ""
   )
 
   def saveImagesForJumioScan(scanReference: String, dir: String)
@@ -70,14 +73,9 @@ object RetrieveImageUsageExample extends App {
     }
 
   val scanReference = "5577a6aa-11d5-4d3f-82f9-82df075e191d"
-  val mdScanReference = "939f45cb-30e4-4028-80c1-48a02d6078a4"
-
-  val getFiles = saveImagesForJumioScan(scanReference, "")(client.scanImages, client.obtainImage)
-  val getMdFiles = saveImagesForJumioScan(mdScanReference, "")(client.mdScanImages, client.obtainMdImage)
 
   for {
-    _ <- getFiles
-    _ <- getMdFiles
+    _ <- saveImagesForJumioScan(scanReference, "")(client.scanImages, client.obtainImage)
     _ <- system.terminate()
   } yield ()
 }

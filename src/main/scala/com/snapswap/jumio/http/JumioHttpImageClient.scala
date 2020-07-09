@@ -15,11 +15,11 @@ trait JumioHttpImageClient {
   private implicit def toImmutableSeq[T](seq: Seq[T]): collection.immutable.Seq[T] =
     collection.immutable.Seq(seq).flatten
 
-  final def getImages(img: Seq[JumioImage], host: String,
-                      client: HttpClient[NotUsed]): Source[(JumioImageRawData, JumioImage), Any] = {
+  final def getImages(img: Seq[JumioImage], client: HttpClient[NotUsed])
+                     (implicit params: JumioRetrievalConnectionParams): Source[(JumioImageRawData, JumioImage), Any] = {
     client.send(
       Source(img.map { i =>
-        Get(Uri(i.href).withHost(host).withScheme("https")).withHeaders(authHeaders) -> i
+        Get(Uri(i.href).withHost(params.apiHost)).withHeaders(authHeaders) -> i
       })
     ).map {
       case (Success(response), imageInfo) =>

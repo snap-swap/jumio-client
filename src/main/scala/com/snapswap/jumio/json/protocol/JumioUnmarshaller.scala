@@ -120,12 +120,6 @@ trait JumioUnmarshaller
   implicit val jumioNetverifyInitResponseV4Format = jsonFormat(JumioNetverifyInitResponseV4,
     "transactionReference", "redirectUrl", "timestamp"
   )
-  implicit val jumioMdNetverifyInitParamsFormat = jsonFormat(JumioMdNetverifyInitParams,
-    "merchantScanReference", "successUrl", "errorUrl", "callbackUrl", "customerId", "country", "type"
-  )
-  implicit val jumioMdNetverifyInitResponseFormat = jsonFormat(JumioMdNetverifyInitResponse,
-    "scanReference", "clientRedirectUrl"
-  )
 
   implicit object jumioExtractedDataReader extends JumioJsonReader[JumioExtractedData] {
 

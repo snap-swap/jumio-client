@@ -22,12 +22,9 @@ import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AkkaHttpNetverifyClient(override val clientToken: String,
-                              override val clientSecret: String,
-                              override val clientCompanyName: String,
+class AkkaHttpNetverifyClient(override val clientCompanyName: String,
                               override val clientApplicationName: String,
                               override val clientVersion: String,
-                              apiHost: String = "lon.netverify.com",
                               maxRetries: Int = 10)
                              (implicit val system: ActorSystem,
                               val ctx: ExecutionContext,
@@ -38,30 +35,34 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
   private val v4BaseURL = s"/api/v4"
 
   private val connection: Connection[NotUsed] = superPool().log("jumio")
-  private val mdApiHost = s"upload.$apiHost"
 
   private val client: HttpClient[NotUsed] = HttpClient(connection, 5000, OverflowStrategy.dropNew)
 
-  override def listAcceptedIdDocs(): Future[AcceptedIdDocs] =
-    getV3("/acceptedIdTypes", isMd = false)(j => j.convertTo[AcceptedIdDocs])
+  override def listAcceptedIdDocs()(implicit params: JumioNetverifyConnectionParams): Future[AcceptedIdDocs] =
+    getV3("/acceptedIdTypes")(j => j.convertTo[AcceptedIdDocs])
 
 
-  private def getV3[T](path: String, isMd: Boolean)
-                      (parser: JsValue => T): Future[T] = {
-    val request = Get(Uri(v3BaseURL + path).withHost(if (isMd) mdApiHost else apiHost).withScheme("https"))
+  private def getV3[T](path: String)
+                      (parser: JsValue => T)
+                      (implicit params: JumioNetverifyConnectionParams): Future[T] = {
+    val request = Get(Uri(v3BaseURL + path).withHost(params.apiHost))
     requestForJson(request, client)(parser)
   }
 
-  private def postV3[T](path: String, data: JsValue, isMd: Boolean)(parser: JsValue => T): Future[T] = {
+  private def postV3[T](path: String, data: JsValue)
+                       (parser: JsValue => T)
+                       (implicit params: JumioNetverifyConnectionParams): Future[T] = {
     val request =
-      Post(Uri(v3BaseURL + path).withHost(if (isMd) mdApiHost else apiHost).withScheme("https"))
+      Post(Uri(v3BaseURL + path).withHost(params.apiHost))
         .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.compactPrint))
     requestForJson(request, client)(parser)
   }
 
-  private def postV4[T](path: String, data: JsValue, isMd: Boolean)(parser: JsValue => T): Future[T] = {
+  private def postV4[T](path: String, data: JsValue)
+                       (parser: JsValue => T)
+                       (implicit params: JumioNetverifyConnectionParams): Future[T] = {
     val request =
-      Post(Uri(v4BaseURL + path).withHost(if (isMd) mdApiHost else apiHost).withScheme("https"))
+      Post(Uri(v4BaseURL + path).withHost(params.apiHost))
         .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.compactPrint))
     requestForJson(request, client)(parser)
   }
@@ -69,10 +70,13 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
   override def initNetverifyV3(merchantScanReference: String,
                                redirectUrl: String,
                                callbackUrl: String,
-                               customerId: String): Future[JumioNetverifyInitResponseV3] = {
-    val params = JumioNetverifyInitParamsV3(merchantScanReference, redirectUrl, redirectUrl, callbackUrl, customerId)
+                               customerId: String)
+                              (implicit params: JumioNetverifyConnectionParams): Future[JumioNetverifyInitResponseV3] = {
+    val initParams = JumioNetverifyInitParamsV3(
+      merchantScanReference, redirectUrl, redirectUrl, callbackUrl, customerId
+    )
 
-    postV3("/initiateNetverify", params.toJson, isMd = false) { response =>
+    postV3("/initiateNetverify", initParams.toJson) { response =>
       response.convertTo[JumioNetverifyInitResponseV3]
     }
   }
@@ -80,8 +84,9 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
   override def initNetverifyV4(merchantScanReference: String,
                                redirectUrl: String,
                                callbackUrl: String,
-                               customerId: String): Future[JumioNetverifyInitResponseV4] = {
-    val params = JumioNetverifyInitParamsV4(
+                               customerId: String)
+                              (implicit params: JumioNetverifyConnectionParams): Future[JumioNetverifyInitResponseV4] = {
+    val initParams = JumioNetverifyInitParamsV4(
       customerInternalReference = merchantScanReference,
       successUrl = redirectUrl,
       errorUrl = redirectUrl,
@@ -89,22 +94,8 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
       userReference = customerId
     )
 
-    postV4("/initiate", params.toJson, isMd = false) { response =>
+    postV4("/initiate", initParams.toJson) { response =>
       response.convertTo[JumioNetverifyInitResponseV4]
-    }
-  }
-
-  override def initMdNetverify(merchantScanReference: String,
-                               redirectUrl: String,
-                               callbackUrl: String,
-                               customerId: String,
-                               country: String,
-                               docType: EnumJumioDocTypes.JumioDocType): Future[JumioMdNetverifyInitResponse] = {
-    val params = JumioMdNetverifyInitParams(
-      merchantScanReference, redirectUrl, redirectUrl, callbackUrl, customerId, country, docType
-    )
-    postV3("/acquisitions", params.toJson, isMd = true) { response =>
-      response.convertTo[JumioMdNetverifyInitResponse]
     }
   }
 
@@ -116,7 +107,8 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
                                 idBack: Option[JumioImageRawData],
                                 callbackUrl: String,
                                 customerId: Option[String],
-                                clientIp: Option[String]): Future[PerformNetverifyResponse] = {
+                                clientIp: Option[String])
+                               (implicit params: JumioNetverifyConnectionParams): Future[PerformNetverifyResponse] = {
     for {
       faceString: Option[String] <- face.map(f => {
         encode(f.data).map(Some(_))
@@ -125,7 +117,7 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
       }
       idFrontString <- encode(idFront.data)
       idBackString: Option[String] <- idBack.map(_.data).map(encode).map(_.map(Some(_))).getOrElse(Future.successful(None))
-      params = PerformNetverifyRequest(
+      initParams = PerformNetverifyRequest(
         merchantIdScanReference = merchantIdScanReference,
         faceImage = faceString,
         faceImageMimeType = face.map(_.contentType.mediaType.toString),
@@ -145,8 +137,8 @@ class AkkaHttpNetverifyClient(override val clientToken: String,
         customerId = customerId,
         clientIp = clientIp
       )
-      _ = log.debug(s"Use 'performNetverify' with parameters: $params")
-      result <- postV3("/performNetverify", params.toJson, isMd = false) { response =>
+      _ = log.debug(s"Use 'performNetverify' with parameters: $initParams")
+      result <- postV3("/performNetverify", initParams.toJson) { response =>
         response.convertTo[PerformNetverifyResponse]
       }
     } yield result

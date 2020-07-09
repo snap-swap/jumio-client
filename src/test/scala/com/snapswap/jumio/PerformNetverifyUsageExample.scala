@@ -10,7 +10,7 @@ import akka.http.scaladsl.model.{ContentType, MediaTypes}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.snapswap.jumio.http.AkkaHttpNetverifyClient
+import com.snapswap.jumio.http.{AkkaHttpNetverifyClient, JumioNetverifyConnectionParams}
 import com.snapswap.jumio.model.EnumJumioDocTypes
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
 
@@ -25,12 +25,15 @@ object PerformNetverifyUsageExample extends App {
   val log = Logging(system, this.getClass)
 
   val client = new AkkaHttpNetverifyClient(
-    clientToken = "",
-    clientSecret = "",
     clientCompanyName = "snapswap",
     clientApplicationName = "remote-kyc",
-    clientVersion = "v1",
-    apiHost = "netverify.com"
+    clientVersion = "v1"
+  )
+
+  implicit val connectionParams = JumioNetverifyConnectionParams(
+    apiHost = "https://netverify.com",
+    token = "",
+    secret = ""
   )
 
 

@@ -19,10 +19,6 @@ import scala.util.{Failure, Success, Try}
 
 private[http] trait JumioHttpClient {
 
-  def clientToken: String
-
-  def clientSecret: String
-
   def clientCompanyName: String
 
   def clientApplicationName: String
@@ -45,9 +41,9 @@ private[http] trait JumioHttpClient {
   protected def userAgent: String =
     s"$clientCompanyName $clientApplicationName/$clientVersion"
 
-  protected def authHeaders = Seq(
+  protected def authHeaders(implicit params: JumioConnectionParams): Seq[HttpHeader] = Seq(
     `User-Agent`(userAgent),
-    Authorization(BasicHttpCredentials(clientToken, clientSecret))
+    Authorization(BasicHttpCredentials(params.token, params.secret))
   )
 
   protected def send[T](request: HttpRequest, client: HttpClient[NotUsed])
@@ -75,7 +71,9 @@ private[http] trait JumioHttpClient {
       }
     }
 
-  protected def requestForJson[T](request: HttpRequest, client: HttpClient[NotUsed])(parse: JsValue => T): Future[T] =
+  protected def requestForJson[T](request: HttpRequest, client: HttpClient[NotUsed])
+                                 (parse: JsValue => T)
+                                 (implicit params: JumioConnectionParams): Future[T] =
     send(request.withHeaders(authHeaders :+ Accept(MediaTypes.`application/json`)), client)(asJson)
       .map(v => parseJsValue(v, parse))
 
