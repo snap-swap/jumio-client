@@ -46,7 +46,7 @@ class AkkaHttpRetrievalClient(override val clientCompanyName: String,
                     (parser: JsValue => T)
                     (implicit params: JumioRetrievalConnectionParams): Future[T] = {
     val request = Get(v3BaseURL + path + parameters(query))
-    requestForJson(request.withUri(request.uri.withHost(params.apiHost)), client)(parser)
+    requestForJson(request.withUri(params.apiHost + request.uri), client)(parser)
   }
 
   override def scanStatus(scanReference: String)

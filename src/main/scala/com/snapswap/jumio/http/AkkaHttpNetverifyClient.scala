@@ -45,7 +45,7 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
   private def getV3[T](path: String)
                       (parser: JsValue => T)
                       (implicit params: JumioNetverifyConnectionParams): Future[T] = {
-    val request = Get(Uri(v3BaseURL + path).withHost(params.apiHost))
+    val request = Get(Uri(params.apiHost + v3BaseURL + path))
     requestForJson(request, client)(parser)
   }
 
@@ -53,7 +53,7 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
                        (parser: JsValue => T)
                        (implicit params: JumioNetverifyConnectionParams): Future[T] = {
     val request =
-      Post(Uri(v3BaseURL + path).withHost(params.apiHost))
+      Post(Uri(params.apiHost + v3BaseURL + path))
         .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.compactPrint))
     requestForJson(request, client)(parser)
   }
@@ -62,7 +62,7 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
                        (parser: JsValue => T)
                        (implicit params: JumioNetverifyConnectionParams): Future[T] = {
     val request =
-      Post(Uri(v4BaseURL + path).withHost(params.apiHost))
+      Post(Uri(params.apiHost + v4BaseURL + path))
         .withEntity(HttpEntity(ContentType(MediaTypes.`application/json`), data.compactPrint))
     requestForJson(request, client)(parser)
   }
