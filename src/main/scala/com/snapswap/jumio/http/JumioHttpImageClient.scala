@@ -19,7 +19,7 @@ trait JumioHttpImageClient {
                      (implicit params: JumioRetrievalConnectionParams): Source[(JumioImageRawData, JumioImage), Any] = {
     client.send(
       Source(img.map { i =>
-        Get(Uri(params.apiHost + i.href)).withHeaders(authHeaders) -> i
+        Get(Uri(i.href)).withHeaders(authHeaders) -> i
       })
     ).map {
       case (Success(response), imageInfo) =>
