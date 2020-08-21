@@ -1,6 +1,5 @@
 package com.snapswap.jumio.http
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model._
@@ -46,7 +45,7 @@ private[http] trait JumioHttpClient {
     Authorization(BasicHttpCredentials(params.token, params.secret))
   )
 
-  protected def send[T](request: HttpRequest, client: HttpClient[NotUsed])
+  protected def send[T](request: HttpRequest, client: HttpClient)
                        (transform: ResponseEntity => Future[T]): Future[T] =
     client.send(request).recoverWith {
       case ex =>
@@ -71,7 +70,7 @@ private[http] trait JumioHttpClient {
       }
     }
 
-  protected def requestForJson[T](request: HttpRequest, client: HttpClient[NotUsed])
+  protected def requestForJson[T](request: HttpRequest, client: HttpClient)
                                  (parse: JsValue => T)
                                  (implicit params: JumioConnectionParams): Future[T] =
     send(request.withHeaders(authHeaders :+ Accept(MediaTypes.`application/json`)), client)(asJson)

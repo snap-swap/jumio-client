@@ -1,14 +1,12 @@
 package com.snapswap.jumio.http
 
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.client.RequestBuilding._
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import akka.stream.{Materializer, OverflowStrategy}
 import com.snapswap.http.client.HttpClient
-import com.snapswap.http.client.HttpConnection._
 import com.snapswap.jumio._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
 import com.snapswap.jumio.model.retrieval._
@@ -31,8 +29,7 @@ class AkkaHttpRetrievalClient(override val clientCompanyName: String,
   override val log = Logging(system, this.getClass)
   private val v3BaseURL = s"/api/netverify/v2"
 
-  private val connection: Connection[NotUsed] = superPool().log("jumio netverify retrieval")
-  private val client: HttpClient[NotUsed] = HttpClient(connection, 5000, OverflowStrategy.dropNew)
+  private val client: HttpClient = HttpClient(logger = Some(log))
 
 
   private def parameters[T](query: Map[String, String]): String =

@@ -2,16 +2,14 @@ package com.snapswap.jumio.http
 
 import java.util.Base64
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model._
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.ByteString
 import com.snapswap.http.client.HttpClient
-import com.snapswap.http.client.HttpConnection._
 import com.snapswap.jumio._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
 import com.snapswap.jumio.model._
@@ -34,9 +32,7 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
   private val v3BaseURL = s"/api/netverify/v2"
   private val v4BaseURL = s"/api/v4"
 
-  private val connection: Connection[NotUsed] = superPool().log("jumio")
-
-  private val client: HttpClient[NotUsed] = HttpClient(connection, 5000, OverflowStrategy.dropNew)
+  private val client: HttpClient = HttpClient(logger = Some(log))
 
   override def listAcceptedIdDocs()(implicit params: JumioNetverifyConnectionParams): Future[AcceptedIdDocs] =
     getV3("/acceptedIdTypes")(j => j.convertTo[AcceptedIdDocs])

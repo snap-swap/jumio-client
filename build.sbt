@@ -2,7 +2,7 @@ name := "jumio-client"
 
 organization := "com.snapswap"
 
-version := "1.0.55"
+version := "1.0.56"
 
 scalaVersion := "2.11.11"
 
@@ -34,7 +34,7 @@ libraryDependencies ++= {
   val akkaV = "2.5.26"
   Seq(
     "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpV,
-    "com.snapswap" %% "akka-http-stream-client" % "0.1.5",
+    "com.snapswap" %% "akka-http-stream-client" % "0.2.1",
     "com.google.code.findbugs" % "jsr305" % "3.0.1" % Provided,
     "org.scalatest" %% "scalatest" % "3.0.8" % Test,
     "com.typesafe.akka" %% "akka-testkit" % akkaV % Test,
