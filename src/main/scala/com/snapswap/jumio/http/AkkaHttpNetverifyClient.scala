@@ -80,14 +80,16 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
   override def initNetverifyV4(merchantScanReference: String,
                                redirectUrl: String,
                                callbackUrl: String,
-                               customerId: String)
+                               customerId: String,
+                               locale: Option[String])
                               (implicit params: JumioNetverifyConnectionParams): Future[JumioNetverifyInitResponseV4] = {
     val initParams = JumioNetverifyInitParamsV4(
       customerInternalReference = merchantScanReference,
       successUrl = redirectUrl,
       errorUrl = redirectUrl,
       callbackUrl = callbackUrl,
-      userReference = customerId
+      userReference = customerId,
+      locale = locale
     )
 
     postV4("/initiate", initParams.toJson) { response =>

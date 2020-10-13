@@ -20,7 +20,8 @@ trait NetverifyClient {
   def initNetverifyV4(merchantScanReference: String,
                       redirectUrl: String,
                       callbackUrl: String,
-                      customerId: String)
+                      customerId: String,
+                      locale: Option[String])
                      (implicit params: JumioNetverifyConnectionParams): Future[JumioNetverifyInitResponseV4]
 
   def performNetverify(merchantIdScanReference: String,

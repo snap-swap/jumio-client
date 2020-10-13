@@ -112,7 +112,7 @@ trait JumioUnmarshaller
     "merchantIdScanReference", "successUrl", "errorUrl", "callbackUrl", "customerId"
   )
   implicit val jumioNetverifyInitParamsV4Format = jsonFormat(JumioNetverifyInitParamsV4,
-    "customerInternalReference", "successUrl", "errorUrl", "callbackUrl", "userReference"
+    "customerInternalReference", "successUrl", "errorUrl", "callbackUrl", "userReference", "locale"
   )
   implicit val jumioNetverifyInitResponseV3Format = jsonFormat(JumioNetverifyInitResponseV3,
     "authorizationToken", "jumioIdScanReference", "timestamp"

@@ -4,5 +4,5 @@ case class JumioNetverifyInitParamsV4(customerInternalReference: String, //the s
                                       successUrl: String,
                                       errorUrl: String,
                                       callbackUrl: String,
-                                      userReference: String //the same as customerId in v3
-                                     )
+                                      userReference: String, //the same as customerId in v3
+                                      locale: Option[String])
