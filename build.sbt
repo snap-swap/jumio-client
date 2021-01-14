@@ -2,7 +2,7 @@ name := "jumio-client"
 
 organization := "com.snapswap"
 
-version := "1.0.57"
+version := "1.0.58"
 
 scalaVersion := "2.11.11"
 

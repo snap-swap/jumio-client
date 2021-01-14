@@ -64,7 +64,7 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
   }
 
   override def initNetverifyV3(merchantScanReference: String,
-                               redirectUrl: String,
+                               redirectUrl: Option[String],
                                callbackUrl: String,
                                customerId: String)
                               (implicit params: JumioNetverifyConnectionParams): Future[JumioNetverifyInitResponseV3] = {
@@ -78,10 +78,11 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
   }
 
   override def initNetverifyV4(merchantScanReference: String,
-                               redirectUrl: String,
+                               redirectUrl: Option[String],
                                callbackUrl: String,
                                customerId: String,
-                               locale: Option[String])
+                               locale: Option[String],
+                               workflowId: Option[Int])
                               (implicit params: JumioNetverifyConnectionParams): Future[JumioNetverifyInitResponseV4] = {
     val initParams = JumioNetverifyInitParamsV4(
       customerInternalReference = merchantScanReference,
@@ -89,7 +90,8 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
       errorUrl = redirectUrl,
       callbackUrl = callbackUrl,
       userReference = customerId,
-      locale = locale
+      locale = locale,
+      workflowId = workflowId
     )
 
     postV4("/initiate", initParams.toJson) { response =>

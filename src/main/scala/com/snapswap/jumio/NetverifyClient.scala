@@ -11,17 +11,19 @@ import scala.concurrent.Future
 
 trait NetverifyClient {
 
+  //FIXME check usages for front-end, remove as unsupported by jumio
   def initNetverifyV3(merchantScanReference: String,
-                      redirectUrl: String,
+                      redirectUrl: Option[String],
                       callbackUrl: String,
                       customerId: String)
                      (implicit params: JumioNetverifyConnectionParams): Future[JumioNetverifyInitResponseV3]
 
   def initNetverifyV4(merchantScanReference: String,
-                      redirectUrl: String,
+                      redirectUrl: Option[String],
                       callbackUrl: String,
                       customerId: String,
-                      locale: Option[String])
+                      locale: Option[String],
+                      workflowId: Option[Int])
                      (implicit params: JumioNetverifyConnectionParams): Future[JumioNetverifyInitResponseV4]
 
   def performNetverify(merchantIdScanReference: String,
