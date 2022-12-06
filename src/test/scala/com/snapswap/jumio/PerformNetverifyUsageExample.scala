@@ -3,7 +3,6 @@ package com.snapswap.jumio
 import java.io.File
 import java.nio.file.Files
 import java.time.{LocalDateTime, ZoneOffset}
-
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model.{ContentType, MediaTypes}
@@ -12,6 +11,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.snapswap.jumio.http.{AkkaHttpNetverifyClient, JumioNetverifyConnectionParams}
 import com.snapswap.jumio.model.EnumJumioDocTypes
+import com.snapswap.jumio.model.netverify.JumioUserConsent
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
 
 
@@ -66,7 +66,7 @@ object PerformNetverifyUsageExample extends App {
       ContentType(MediaTypes.`image/jpeg`)
     )),
     customerId = None,
-    clientIp = None
+    consent = JumioUserConsent.noConsent("83.99.11.41", "LUX")
   ).flatMap { result =>
     log.info(s"\n\n$result\n\n")
     system.terminate()

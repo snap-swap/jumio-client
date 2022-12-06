@@ -1,7 +1,5 @@
 package com.snapswap.jumio.http
 
-import java.util.Base64
-
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.client.RequestBuilding._
@@ -14,10 +12,11 @@ import com.snapswap.jumio._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
 import com.snapswap.jumio.model._
 import com.snapswap.jumio.model.init._
-import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, PerformNetverifyRequest, PerformNetverifyResponse}
+import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, JumioUserConsent, PerformNetverifyRequest, PerformNetverifyResponse}
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
 import spray.json._
 
+import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future}
 
 class AkkaHttpNetverifyClient(override val clientCompanyName: String,
@@ -107,7 +106,7 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
                                 idBack: Option[JumioImageRawData],
                                 callbackUrl: String,
                                 customerId: Option[String],
-                                clientIp: Option[String])
+                                consent: JumioUserConsent)
                                (implicit params: JumioNetverifyConnectionParams): Future[PerformNetverifyResponse] = {
     for {
       faceString: Option[String] <- face.map(f => {
@@ -135,7 +134,7 @@ class AkkaHttpNetverifyClient(override val clientCompanyName: String,
             "idNumber,idFirstName,idLastName,idDob,idExpiry,idUsState,idPersonalNumber,idAddress"
         },
         customerId = customerId,
-        clientIp = clientIp
+        userConsent = consent
       )
       _ = log.debug(s"Use 'performNetverify' with parameters: $initParams")
       result <- postV3("/performNetverify", initParams.toJson) { response =>

@@ -3,7 +3,7 @@ package com.snapswap.jumio
 import com.snapswap.jumio.http.JumioNetverifyConnectionParams
 import com.snapswap.jumio.model.EnumJumioDocTypes
 import com.snapswap.jumio.model.init.{JumioNetverifyInitResponseV3, JumioNetverifyInitResponseV4}
-import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, PerformNetverifyResponse}
+import com.snapswap.jumio.model.netverify.{AcceptedIdDocs, JumioUserConsent, PerformNetverifyResponse}
 import com.snapswap.jumio.model.retrieval.JumioImageRawData
 
 import scala.concurrent.Future
@@ -34,7 +34,7 @@ trait NetverifyClient {
                        idBack: Option[JumioImageRawData],
                        callbackUrl: String,
                        customerId: Option[String],
-                       clientIp: Option[String])
+                       consent: JumioUserConsent)
                       (implicit params: JumioNetverifyConnectionParams): Future[PerformNetverifyResponse]
 
   def listAcceptedIdDocs()(implicit params: JumioNetverifyConnectionParams): Future[AcceptedIdDocs]
