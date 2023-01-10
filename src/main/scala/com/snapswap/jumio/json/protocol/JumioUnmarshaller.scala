@@ -5,6 +5,7 @@ import com.snapswap.jumio.model.EnumJumioDocTypes.JumioDocType
 import com.snapswap.jumio.model._
 import com.snapswap.jumio.model.errors.JumioMalformedResponse
 import com.snapswap.jumio.model.init._
+import com.snapswap.jumio.model.netverify.JumioUserConsent.{ConsentStatusEnum, UserConsent, UserLocation}
 import com.snapswap.jumio.model.netverify._
 import com.snapswap.jumio.model.retrieval._
 import spray.json._
@@ -219,6 +220,11 @@ trait JumioUnmarshaller
     ))
   }
 
+  implicit val consentStatusEnumFormat = enumNameFormat(ConsentStatusEnum)
+  implicit val userConsentFormat = jsonFormat(UserConsent, "obtained", "obtainedAt")
+  implicit val userLocationFormat = jsonFormat(UserLocation, "country", "state")
+  implicit val jumioUserConsentFormat = jsonFormat(JumioUserConsent.apply, "userIp", "userLocation", "consent")
+
   implicit val performNetverifyRequestFormat = jsonFormat(PerformNetverifyRequest,
     "merchantIdScanReference",
     "faceImage",
@@ -232,7 +238,7 @@ trait JumioUnmarshaller
     "callbackUrl",
     "enabledFields",
     "customerId",
-    "clientIp"
+    "userConsent"
   )
 
   implicit val performNetverifyResponseFormat = jsonFormat(PerformNetverifyResponse,

@@ -1,7 +1,7 @@
 package com.snapswap.jumio.model.netverify
 
-import spray.json._
 import com.snapswap.jumio.json.protocol.JumioUnmarshaller._
+import spray.json._
 
 case class PerformNetverifyRequest(merchantIdScanReference: String,
                                    faceImage: Option[String],
@@ -15,9 +15,10 @@ case class PerformNetverifyRequest(merchantIdScanReference: String,
                                    callbackUrl: String,
                                    enabledFields: String,
                                    customerId: Option[String],
-                                   clientIp: Option[String]) {
+                                   userConsent: JumioUserConsent) {
   override def toString: String = {
     def shorten(str: String): String = s"${str.substring(0, 3)}..."
+
     copy(
       faceImage = faceImage.map(shorten),
       frontsideImage = shorten(frontsideImage),
