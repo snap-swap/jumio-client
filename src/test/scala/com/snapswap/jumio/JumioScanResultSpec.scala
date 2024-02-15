@@ -1,11 +1,11 @@
 package com.snapswap.jumio
 
+import com.snapswap.jumio.model.netverify.{JumioScanResult, JumioScanSuccess}
+import com.snapswap.jumio.model.{JumioGenderEnum, JumioRawResult}
+import org.scalatest._
+
 import java.time.LocalDate
 import java.util.UUID
-
-import com.snapswap.jumio.model.JumioRawResult
-import com.snapswap.jumio.model.netverify.{JumioScanResult, JumioScanSuccess}
-import org.scalatest._
 
 class JumioScanResultSpec extends WordSpecLike with Matchers {
 
@@ -20,6 +20,15 @@ class JumioScanResultSpec extends WordSpecLike with Matchers {
           s"identity verification similarity is MATCH, look like valid, " +
           s"URLs [idScanImage=https://lon.netverify.com/protected-image/yyyyyyyy, idScanImageBackside=N/A, idScanImageFace=https://lon.netverify.com/protected-image/zzzzzzzz]: " +
           s"USA PASSPORT of 'FIRSTNAME' 'LASTNAME', born '1990-01-01' resident of ',  , USA', 'P1234' number, 'N/A' personal number, expiry at '2022-12-31'"
+    }
+    "correctly parse success callback with the X gender" in {
+      val successWithX = approvedVerifiedResult(scanRef, gender = Some("X"))
+      JumioScanResult.of(successWithX) match {
+        case s: JumioScanSuccess =>
+          successWithX.rawData.get("gender") shouldBe Some("X")
+          s.document.gender shouldBe Some(JumioGenderEnum.x)
+        case r => r shouldBe a[JumioScanSuccess]
+      }
     }
     "correctly parse success fraud callback" in {
       JumioScanResult.of(deniedFraud(scanRef)).toString shouldBe
@@ -40,7 +49,7 @@ class JumioScanResultSpec extends WordSpecLike with Matchers {
   }
 
 
-  private def approvedVerifiedResult(scanRef: UUID): JumioRawResult = JumioRawResult.of(Map(
+  private def approvedVerifiedResult(scanRef: UUID, gender: Option[String] = None): JumioRawResult = JumioRawResult.of(Map(
     "idExpiry" -> "2022-12-31",
     "idType" -> "PASSPORT",
     "idDob" -> "1990-01-01",
@@ -71,7 +80,7 @@ class JumioScanResultSpec extends WordSpecLike with Matchers {
     "transactionDate" -> "2016-12-31T23:59:59.999Z",
     "callbackDate" -> "2017-12-31T23:59:59.999Z",
     "idType" -> "PASSPORT"
-  ))
+  ) ++ gender.map(g => Map("gender" -> g)).getOrElse(Map.empty))
 
   private def deniedFraud(scanRef: UUID): JumioRawResult = JumioRawResult.of(Map(
     "rejectReason" -> "{ \"rejectReasonCode\":\"100\", \"rejectReasonDescription\":\"MANIPULATED_DOCUMENT\", \"rejectReasonDetails\": [{ \"detailsCode\": \"1001\", \"detailsDescription\": \"PHOTO\" },{ \"detailsCode\": \"1004\", \"detailsDescription\": \"DOB\" }]}",
@@ -129,4 +138,6 @@ class JumioScanResultSpec extends WordSpecLike with Matchers {
     "idCheckSecurityFeatures" -> "OK",
     "idCheckHologram" -> "OK"
   ))
+
+
 }
