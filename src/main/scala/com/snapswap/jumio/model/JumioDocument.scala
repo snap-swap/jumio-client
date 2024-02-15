@@ -70,7 +70,7 @@ object JumioDocument {
 
     def status: Option[JumioDocumentStatus] = parameters.get("status").map(EnumJumioDocumentStatus.withName)
 
-    def gender: Option[Gender] = parameters.get("gender").map(JumioGenderEnum.parse)
+    def gender: Option[Gender] = parameters.get("gender").flatMap(JumioGenderEnum.parse)
 
     def nationality: Option[String] = parameters.get("nationality")
 

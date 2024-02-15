@@ -23,10 +23,24 @@ class JumioScanResultSpec extends WordSpecLike with Matchers {
     }
     "correctly parse success callback with the X gender" in {
       val successWithX = approvedVerifiedResult(scanRef, gender = Some("X"))
+      val successWithF = approvedVerifiedResult(scanRef, gender = Some("F"))
+      val successNoGender = approvedVerifiedResult(scanRef, gender = None)
       JumioScanResult.of(successWithX) match {
         case s: JumioScanSuccess =>
           successWithX.rawData.get("gender") shouldBe Some("X")
-          s.document.gender shouldBe Some(JumioGenderEnum.x)
+          s.document.gender shouldBe None
+        case r => r shouldBe a[JumioScanSuccess]
+      }
+      JumioScanResult.of(successWithF) match {
+        case s: JumioScanSuccess =>
+          successWithF.rawData.get("gender") shouldBe Some("F")
+          s.document.gender shouldBe Some(JumioGenderEnum.female)
+        case r => r shouldBe a[JumioScanSuccess]
+      }
+      JumioScanResult.of(successNoGender) match {
+        case s: JumioScanSuccess =>
+          successNoGender.rawData.get("gender") shouldBe None
+          s.document.gender shouldBe None
         case r => r shouldBe a[JumioScanSuccess]
       }
     }

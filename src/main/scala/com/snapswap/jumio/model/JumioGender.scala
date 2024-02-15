@@ -3,16 +3,13 @@ package com.snapswap.jumio.model
 object JumioGenderEnum extends Enumeration {
   type Gender = Value
 
-  val male, female, x = Value
+  val male, female = Value
 
-  def parse(value: String): Gender = {
+  def parse(value: String): Option[Gender] = {
     value match {
-      case "M" =>
-        male
-      case "F" =>
-        female
-      case "X" =>
-        x
+      case "M" => Some(male)
+      case "F" => Some(female)
+      case _ => None
     }
   }
 }
